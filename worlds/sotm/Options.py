@@ -168,7 +168,7 @@ class RequiredScions(Range):
     """The number of scions that must be received before fighting Oblivaeon"""
     display_name = "Required Scions"
     range_start = 0
-    range_end = 100
+    range_end = 1000
     default = 10
 
 
@@ -176,7 +176,7 @@ class ExtraScions(Range):
     """The number of additional scions in the pool"""
     display_name = "Extra Scions"
     range_start = 0
-    range_end = 100
+    range_end = 1000
     default = 0
 
 

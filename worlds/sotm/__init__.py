@@ -34,7 +34,7 @@ class SotmWorld(World):
     Each player plays as a hero, against a villain, in an environment.
     """
 
-    game = "Sentinels of the Multiverse"
+    game: str = "Sentinels of the Multiverse"
     option_definitions = sotm_options
     topology_present: bool = True
     web = SotmWeb()
@@ -465,14 +465,19 @@ class SotmWorld(World):
 
     def fill_slot_data(self) -> Dict[str, object]:
         return {
-            "included_villains": [v.name for v in self.included_villains],
-            "included_environments": [e.name for e in self.included_environments],
-            "possible_variants": [v.name for v in self.possible_variants],
             "required_scions": self.options.required_scions.value,
             "required_variants": self.options.required_variants.value,
             "required_villains": self.options.required_villains.value,
             "villain_difficulty_points":
                 [1, 2, 2, 5] if self.options.villain_difficulty_affects_goal == Toggle.option_true else [1, 0, 0, 0],
+            "locations_per": [
+                self.options.locations_per_villain_normal.value,
+                self.options.locations_per_villain_advanced.value,
+                self.options.locations_per_villain_challenge.value,
+                self.options.locations_per_villain_ultimate.value,
+                self.options.locations_per_environment.value,
+                self.options.locations_per_variant.value
+            ]
         }
 
 

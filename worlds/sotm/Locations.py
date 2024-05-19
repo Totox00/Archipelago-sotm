@@ -77,10 +77,10 @@ class SotmLocation(Location):
     @staticmethod
     def get_location_name_groups() -> dict:
         location_name_groups = {
-            **{f"Environments #{n}": [f"{d.name} - Any Difficulty #{n}" for d in data
-                                      if d.category == SotmCategory.Environment] for n in range(1, 6)},
-            **{f"Variants #{n}": [f"{d.name} - Unlock #{n}" for d in data
-                                  if d.category == SotmCategory.Variant or d.category == SotmCategory.VillainVariant]
+            **{f"Environments #{n}": {f"{d.name} - Any Difficulty #{n}" for d in data
+                                      if d.category == SotmCategory.Environment} for n in range(1, 6)},
+            **{f"Variants #{n}": {f"{d.name} - Unlock #{n}" for d in data
+                                  if d.category == SotmCategory.Variant or d.category == SotmCategory.VillainVariant}
                for n in range(1, 6)},
         }
         villain_names = [d.name for d in data if
@@ -89,15 +89,17 @@ class SotmLocation(Location):
 
         for n in range(1, 6):
             for difficulty in ["Normal", "Advanced"]:
-                location_name_groups.update({f"Villains - {difficulty} {n}": [
-                    f"{name} - {difficulty} #{n}" for name in villain_names]})
+                location_name_groups.update({f"Villains - {difficulty} #{n}": {
+                    f"{name} - {difficulty} #{n}" for name in villain_names}})
             for difficulty in ["Challenge", "Ultimate"]:
-                location_name_groups.update({f"Villains - {difficulty} {n}": [
+                next_group = {
                      f"{name} - {difficulty} #{n}" for name
-                     in villain_names if name != "Spite: Agent of Gloom" and name != "Gloomweaver Skinwalker"]
-                     + [f"Spite: Agent of Gloom and Skinwalker Gloomweaver - {difficulty} #{n}"]})
+                     in villain_names if
+                     name != "Spite: Agent of Gloom" and name != "Gloomweaver Skinwalker"}
+                next_group.add(f"Spite: Agent of Gloom and Skinwalker Gloomweaver - {difficulty} #{n}")
+                location_name_groups.update({f"Villains - {difficulty} #{n}": next_group})
             for difficulty in difficulties:
-                location_name_groups.update({f"Team Villains - {difficulty} {n}": [
-                    f"{name} - {difficulty} #{n}" for name in team_villain_names]})
+                location_name_groups.update({f"Team Villains - {difficulty} #{n}": {
+                    f"{name} - {difficulty} #{n}" for name in team_villain_names}})
 
         return location_name_groups
