@@ -220,7 +220,7 @@ data = [SotmData(*row) for row in [
     ("Madame Mittermeier's Fantastical Festival of Conundrums and Curiosities", SotmSource.VillainsOfTheMultiverse,
      SotmCategory.Environment),
     ("Magmaria", SotmSource.VillainsOfTheMultiverse, SotmCategory.Environment),
-    ("The Temple of zhu Long", SotmSource.VillainsOfTheMultiverse, SotmCategory.Environment),
+    ("The Temple of Zhu Long", SotmSource.VillainsOfTheMultiverse, SotmCategory.Environment),
     ("The Celestial Tribunal", SotmSource.TheCelestialTribunal, SotmCategory.Environment),
     ("Champion Studios", SotmSource.Oblivaeon, SotmCategory.Environment),
     ("Fort Adamant", SotmSource.Oblivaeon, SotmCategory.Environment),
