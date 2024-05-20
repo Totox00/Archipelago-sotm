@@ -33,7 +33,7 @@ The defaults are:
 Once connected, you can move the cursor using arrow keys, send a location using Enter,
 filter items and locations by typing, clear the filter using Ctrl+C, and disconnect using Ctrl+D.
 
-Select can also be used to toggle multi-sending, which makes it so sending an Ultimate location for
+Shift can also be used to toggle multi-sending, which makes it so sending an Ultimate location for
 a villain also sends the easier difficulties, and Advanced and Challenge also send the Normal location.
 
 Home can be used to return to the top left if you get lost.
