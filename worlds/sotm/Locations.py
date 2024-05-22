@@ -2,7 +2,7 @@ from typing import Optional, Callable
 
 from BaseClasses import Location, CollectionState
 
-from .Data import data, SotmSource, SotmCategory, difficulties, SotmState, team_villain_count
+from .Data import data, SotmCategory, difficulties, SotmState, team_villain_count, has_fanmade
 
 
 class SotmLocation(Location):
@@ -68,7 +68,7 @@ class SotmLocation(Location):
                         output.update({f"{location_data.name} - Any Difficulty #{n}": next_id})
                         next_id += 1
                 case SotmCategory.Variant:
-                    if location_data.source != SotmSource.TheCauldron and location_data.name != "Completionist Guise":
+                    if location_data.name != "Completionist Guise" and not has_fanmade(location_data.sources):
                         for n in range(1, 6):
                             output.update({f"{location_data.name} - Unlock #{n}": next_id})
                             next_id += 1

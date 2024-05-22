@@ -11,7 +11,7 @@ from .Items import SotmItem
 from .Locations import SotmLocation
 from .Options import sotm_options
 from .Data import SotmSource, SotmData, SotmCategory, general_access_rule, data, has_all_of, difficulties, SotmState, \
-    any_variant
+    any_variant, fanmade_sources, has_fanmade
 
 
 class SotmWeb(WebWorld):
@@ -34,7 +34,7 @@ class SotmWorld(World):
     Each player plays as a hero, against a villain, in an environment.
     """
 
-    game: str = "Sentinels of the Multiverse"
+    game = "Sentinels of the Multiverse"
     option_definitions = sotm_options
     topology_present: bool = True
     web = SotmWeb()
@@ -53,6 +53,7 @@ class SotmWorld(World):
     total_locations: int
     total_items: int
     team_villains: int
+    required_scions: int
     required_client_version = (0, 0, 1)
     item_name_to_id = SotmItem.get_name_to_id()
     location_name_to_id = SotmLocation.get_name_to_id()
@@ -64,7 +65,7 @@ class SotmWorld(World):
         self.state = SotmState()
         self.total_items = 0
         self.total_locations = 0
-        self.enabled_sources = {SotmSource.Base}
+        self.enabled_sources = set()
         self.available = []
         self.available_variants = []
         self.included_villains = []
@@ -118,10 +119,12 @@ class SotmWorld(World):
             self.enabled_sources.add(SotmSource.TheCelestialTribunal)
         if self.options.enable_the_cauldron == Toggle.option_true:
             self.enabled_sources.add(SotmSource.TheCauldron)
+        if self.options.enable_cauldron_promos == Toggle.option_true:
+            self.enabled_sources.add(SotmSource.CauldronPromos)
 
         print(f"Constructing item pool for player {self.player}...")
         print(f"1/9: Available")
-        self.available = [d for d in data if d.source in self.enabled_sources]
+        self.available = [d for d in data if False not in ((source in self.enabled_sources) for source in d.sources)]
         full_state = SotmState()
         full_state.items.update(d.name for d in self.available)
         self.available_variants = [d for d in self.available
@@ -311,9 +314,9 @@ class SotmWorld(World):
 
     def include_location(self, location: str) -> bool:
         if environment_match := environment_re.match(location) is not None:
-            return self.include_data(SotmData(environment_match.group(1), SotmSource.Base, SotmCategory.Environment))
+            return self.include_data(SotmData(environment_match.group(1), [], SotmCategory.Environment))
         elif villain_match := villain_re.match(location) is not None:
-            return self.include_data(SotmData(villain_match.group(1), SotmSource.Base, SotmCategory.Villain))
+            return self.include_data(SotmData(villain_match.group(1), [], SotmCategory.Villain))
         elif variant_match := variant_re.match(location) is not None:
             if [variant_match.group(1) == v.name for v in self.possible_variants].count(True) > 0:
                 return True
@@ -427,7 +430,16 @@ class SotmWorld(World):
                 if variant.category == SotmCategory.Variant:
                     items.append(self.create_item_from_data(variant))
 
-        total_scions = self.options.required_scions.value + self.options.extra_scions.value
+        if self.options.scions_are_relative.value == Toggle.option_true:
+            total_portion = self.options.required_scions.value + self.options.extra_scions.value
+            if total_portion > 1000:
+                total_portion = 1000
+            total_scions = math.floor((self.total_locations - len(items)) * total_portion / 1000)
+            self.required_scions = math.floor((self.total_locations - len(items))
+                                              * self.options.required_scions.value / 1000)
+        else:
+            total_scions = self.options.required_scions.value + self.options.extra_scions.value
+            self.required_scions = self.options.required_scions.value
         for _ in range(0, total_scions):
             items.append(self.create_item("Scion of Oblivaeon"))
 
@@ -437,8 +449,7 @@ class SotmWorld(World):
         self.multiworld.itempool.extend(items)
 
     def create_item_from_data(self, d: SotmData) -> Item:
-        if d.source == SotmSource.TheCauldron and (d.category == SotmCategory.Hero
-                                                   or d.category == SotmCategory.Variant):
+        if has_fanmade(d.sources) and (d.category == SotmCategory.Hero or d.category == SotmCategory.Variant):
             return SotmItem(self.player, d.name, self.item_name_to_id[d.name], d.category, ItemClassification.useful)
 
         return SotmItem(self.player, d.name, self.item_name_to_id[d.name], d.category)
@@ -465,7 +476,7 @@ class SotmWorld(World):
 
     def fill_slot_data(self) -> Dict[str, object]:
         return {
-            "required_scions": self.options.required_scions.value,
+            "required_scions": self.required_scions,
             "required_variants": self.options.required_variants.value,
             "required_villains": self.options.required_villains.value,
             "villain_difficulty_points":
@@ -476,8 +487,7 @@ class SotmWorld(World):
                 self.options.locations_per_villain_challenge.value,
                 self.options.locations_per_villain_ultimate.value,
                 self.options.locations_per_environment.value,
-                self.options.locations_per_variant.value
-            ]
+                self.options.locations_per_variant.value]
         }
 
 

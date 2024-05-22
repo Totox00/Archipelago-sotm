@@ -127,6 +127,14 @@ class EnableTheCauldron(Toggle):
     display_name = "Enable The Cauldron"
 
 
+class EnableCauldronPromos(Toggle):
+    """Adds content from the fan-made Cauldron Promos expansion to the pool
+
+    These are cauldron-themed variants for official heroes.
+    Variants for The Cauldron content is included in the option above"""
+    display_name = "Enable Cauldron Promos"
+
+
 class SeparateVariantItems(Choice):
     """Separates hero variants into their own items instead of being unlocked with the hero
     Not Starting makes it so your starting heroes are never variants
@@ -178,6 +186,12 @@ class ExtraScions(Range):
     range_start = 0
     range_end = 1000
     default = 0
+
+
+class ScionsAreRelative(Toggle):
+    """Changes it so the scion count options instead determine the portion of filler items that are replaced with scions
+    1000 means that all are replaced"""
+    display_name = "Scions are Relative"
 
 
 class PoolSize(Range):
@@ -240,7 +254,7 @@ class LocationsPerVariant(Range):
 class StartHeroes(Range):
     """The amount of heroes you start with"""
     display_name = "Start Heroes"
-    range_start = 1
+    range_start = 0
     range_end = 100
     default = 5
 
@@ -248,7 +262,7 @@ class StartHeroes(Range):
 class StartVillains(Range):
     """The amount of villains you start with"""
     display_name = "Start Villains"
-    range_start = 1
+    range_start = 0
     range_end = 25
     default = 2
 
@@ -256,7 +270,7 @@ class StartVillains(Range):
 class StartEnvironment(Range):
     """The amount of environments you start with"""
     display_name = "Start Environments"
-    range_start = 1
+    range_start = 0
     range_end = 25
     default = 2
 
@@ -284,6 +298,7 @@ sotm_options: typing.Dict[str, Option] = {
     "enable_omnitron_iv": EnableOmnitronIV,
     "enable_the_celestial_tribunal": EnableTheCelestialTribunal,
     "enable_the_cauldron": EnableTheCauldron,
+    "enable_cauldron_promos": EnableCauldronPromos,
     # Not yet implemented, current implementation is equivalent to if this is set to "enable"
     # "separate_variant_items": SeparateVariantItems,
     "villain_difficulty_affects_goal": VillainDifficultyAffectsGoal,
@@ -291,6 +306,7 @@ sotm_options: typing.Dict[str, Option] = {
     "required_variants": RequiredVariants,
     "required_scions": RequiredScions,
     "extra_scions": ExtraScions,
+    "scions_are_relative": ScionsAreRelative,
     "pool_size": PoolSize,
     "locations_per_villain_normal": LocationsPerVillainNormal,
     "locations_per_villain_advanced": LocationsPerVillainAdvanced,

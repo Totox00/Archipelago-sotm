@@ -26,8 +26,8 @@ class SotmItem(Item):
     def get_name_to_id() -> dict:
         base_id = 27181774
         return {item_data.name: item_id for item_id, item_data in enumerate(data + [
-            SotmData("Scion of Oblivaeon", SotmSource.Oblivaeon, SotmCategory.Scion),
-            SotmData("1 Undo", SotmSource.Base, SotmCategory.Filler)
+            SotmData("Scion of Oblivaeon", [SotmSource.Oblivaeon], SotmCategory.Scion),
+            SotmData("1 Undo", [], SotmCategory.Filler)
         ], base_id)}
 
     @staticmethod
