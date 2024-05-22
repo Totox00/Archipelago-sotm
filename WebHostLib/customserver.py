@@ -106,7 +106,7 @@ class WebHostContext(Context):
         static_gamespackage = self.gamespackage  # this is shared across all rooms
         static_item_name_groups = self.item_name_groups
         static_location_name_groups = self.location_name_groups
-        self.gamespackage = {}  # this may be modified by _load
+        self.gamespackage = {"Archipelago": static_gamespackage["Archipelago"]}  # this may be modified by _load
         self.item_name_groups = {}
         self.location_name_groups = {}
 
@@ -142,7 +142,7 @@ class WebHostContext(Context):
             savegame_data = Room.get(id=self.room_id).multisave
             if savegame_data:
                 self.set_save(restricted_loads(Room.get(id=self.room_id).multisave))
-            self._start_async_saving()
+            self._start_async_saving(atexit_save=False)
         threading.Thread(target=self.listen_to_db_commands, daemon=True).start()
 
     @db_session
@@ -270,12 +270,17 @@ def run_server_process(name: str, ponyconfig: dict, static_server_data: dict,
                 await ctx.shutdown_task
 
             except (KeyboardInterrupt, SystemExit):
-                pass
-            except Exception:
+                if ctx.saving:
+                    ctx._save()
+            except Exception as e:
                 with db_session:
                     room = Room.get(id=room_id)
                     room.last_port = -1
+                logger.exception(e)
                 raise
+            else:
+                if ctx.saving:
+                    ctx._save()
             finally:
                 try:
                     with (db_session):
