@@ -1,6 +1,7 @@
 import typing
+from dataclasses import dataclass
 
-from Options import Toggle, DefaultOnToggle, Option, Range, Choice
+from Options import Toggle, DefaultOnToggle, Option, Range, Choice, OptionGroup, PerGameCommonOptions
 
 
 class EnableRookCity(DefaultOnToggle):
@@ -275,46 +276,79 @@ class StartEnvironment(Range):
     default = 2
 
 
-sotm_options: typing.Dict[str, Option] = {
-    "enable_rook_city": EnableRookCity,
-    "enable_infernal_relics": EnableInfernalRelics,
-    "enable_shattered_timelines": EnableShatteredTimelines,
-    "enable_wrath_of_the_cosmos": EnableWrathOfTheCosmos,
-    "enable_vengeance": EnableVengeance,
-    "enable_villains_of_the_multiverse": EnableVillainsOfTheMultiverse,
-    "enable_oblivaeon": EnableOblivaeon,
-    "enable_unity": EnableUnity,
-    "enable_the_scholar": EnableTheScholar,
-    "enable_guise": EnableGuise,
-    "enable_stuntman": EnableStuntman,
-    "enable_benchmark": EnableBenchmark,
-    "enable_the_void_guard": EnableTheVoidGuard,
-    "enable_ambuscade": EnableAmbuscade,
-    "enable_miss_information": EnableMissInformation,
-    "enable_wager_master": EnableWagerMaster,
-    "enable_chokepoint": EnableChokepoint,
-    "enable_silver_gulch_1883": EnableSilverGulch1883,
-    "enable_the_final_wasteland": EnableTheFinalWasteland,
-    "enable_omnitron_iv": EnableOmnitronIV,
-    "enable_the_celestial_tribunal": EnableTheCelestialTribunal,
-    "enable_the_cauldron": EnableTheCauldron,
-    "enable_cauldron_promos": EnableCauldronPromos,
+@dataclass
+class SotmOptions(PerGameCommonOptions):
+    enable_rook_city: EnableRookCity
+    enable_infernal_relics: EnableInfernalRelics
+    enable_shattered_timelines: EnableShatteredTimelines
+    enable_wrath_of_the_cosmos: EnableWrathOfTheCosmos
+    enable_vengeance: EnableVengeance
+    enable_villains_of_the_multiverse: EnableVillainsOfTheMultiverse
+    enable_oblivaeon: EnableOblivaeon
+    enable_unity: EnableUnity
+    enable_the_scholar: EnableTheScholar
+    enable_guise: EnableGuise
+    enable_stuntman: EnableStuntman
+    enable_benchmark: EnableBenchmark
+    enable_the_void_guard: EnableTheVoidGuard
+    enable_ambuscade: EnableAmbuscade
+    enable_miss_information: EnableMissInformation
+    enable_wager_master: EnableWagerMaster
+    enable_chokepoint: EnableChokepoint
+    enable_silver_gulch_1883: EnableSilverGulch1883
+    enable_the_final_wasteland: EnableTheFinalWasteland
+    enable_omnitron_iv: EnableOmnitronIV
+    enable_the_celestial_tribunal: EnableTheCelestialTribunal
+    enable_the_cauldron: EnableTheCauldron
+    enable_cauldron_promos: EnableCauldronPromos
     # Not yet implemented, current implementation is equivalent to if this is set to "enable"
-    # "separate_variant_items": SeparateVariantItems,
-    "villain_difficulty_affects_goal": VillainDifficultyAffectsGoal,
-    "required_villains": RequiredVillains,
-    "required_variants": RequiredVariants,
-    "required_scions": RequiredScions,
-    "extra_scions": ExtraScions,
-    "scions_are_relative": ScionsAreRelative,
-    "pool_size": PoolSize,
-    "locations_per_villain_normal": LocationsPerVillainNormal,
-    "locations_per_villain_advanced": LocationsPerVillainAdvanced,
-    "locations_per_villain_challenge": LocationsPerVillainChallenge,
-    "locations_per_villain_ultimate": LocationsPerVillainUltimate,
-    "locations_per_environment": LocationsPerEnvironment,
-    "locations_per_variant": LocationsPerVariant,
-    "start_heroes": StartHeroes,
-    "start_villains": StartVillains,
-    "start_environments": StartEnvironment,
-}
+    # separate_variant_items: SeparateVariantItems
+    villain_difficulty_affects_goal: VillainDifficultyAffectsGoal
+    required_villains: RequiredVillains
+    required_variants: RequiredVariants
+    required_scions: RequiredScions
+    extra_scions: ExtraScions
+    scions_are_relative: ScionsAreRelative
+    pool_size: PoolSize
+    locations_per_villain_normal: LocationsPerVillainNormal
+    locations_per_villain_advanced: LocationsPerVillainAdvanced
+    locations_per_villain_challenge: LocationsPerVillainChallenge
+    locations_per_villain_ultimate: LocationsPerVillainUltimate
+    locations_per_environment: LocationsPerEnvironment
+    locations_per_variant: LocationsPerVariant
+    start_heroes: StartHeroes
+    start_villains: StartVillains
+    start_environments: StartEnvironment
+
+
+sotm_option_groups = [
+    OptionGroup("Official Content", [EnableRookCity,
+                                     EnableInfernalRelics,
+                                     EnableShatteredTimelines,
+                                     EnableWrathOfTheCosmos,
+                                     EnableVengeance,
+                                     EnableVillainsOfTheMultiverse,
+                                     EnableOblivaeon,
+                                     EnableUnity,
+                                     EnableTheScholar,
+                                     EnableGuise,
+                                     EnableStuntman,
+                                     EnableBenchmark,
+                                     EnableTheVoidGuard,
+                                     EnableAmbuscade,
+                                     EnableMissInformation,
+                                     EnableWagerMaster,
+                                     EnableChokepoint,
+                                     EnableSilverGulch1883,
+                                     EnableTheFinalWasteland,
+                                     EnableOmnitronIV,
+                                     EnableTheCelestialTribunal, ]),
+    OptionGroup("Fan-made Content", [EnableTheCauldron, EnableCauldronPromos]),
+    OptionGroup("Goal", [VillainDifficultyAffectsGoal, RequiredVillains, RequiredVariants, RequiredScions, ExtraScions,
+                         ScionsAreRelative]),
+    OptionGroup("Item Pool", [PoolSize]),
+    OptionGroup("Location Density",
+                [LocationsPerVillainNormal, LocationsPerVillainAdvanced, LocationsPerVillainChallenge,
+                 LocationsPerVillainUltimate, LocationsPerEnvironment, LocationsPerVariant]),
+    OptionGroup("Starting items", [StartHeroes, StartVillains, StartEnvironment])
+]

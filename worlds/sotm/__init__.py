@@ -9,7 +9,7 @@ from worlds.AutoWorld import World, WebWorld
 
 from .Items import SotmItem
 from .Locations import SotmLocation
-from .Options import sotm_options
+from .Options import SotmOptions, sotm_option_groups
 from .Data import SotmSource, SotmData, SotmCategory, general_access_rule, data, has_all_of, difficulties, SotmState, \
     any_variant, fanmade_sources, has_fanmade
 
@@ -17,6 +17,7 @@ from .Data import SotmSource, SotmData, SotmCategory, general_access_rule, data,
 class SotmWeb(WebWorld):
     bug_report_page = "https://github.com/Totox00/ap-sotm-client/issues"
     theme = "ocean"
+    option_groups = sotm_option_groups
     tutorials = [Tutorial(
         "Multiworld Setup Guide",
         "A guide to setting up the Archipelago Sentinels of the Multiverse randomizer client on your computer.",
@@ -35,25 +36,30 @@ class SotmWorld(World):
     """
 
     game = "Sentinels of the Multiverse"
-    option_definitions = sotm_options
+    options_dataclass = SotmOptions
+    options: SotmOptions
     topology_present: bool = True
     web = SotmWeb()
     data_version = 1
     base_id = 27181774
+
+    enabled_sources: Set[SotmSource]
     available: list[SotmData]
     available_variants: list[SotmData]
+
     state: SotmState
-    enabled_sources: Set[SotmSource]
     included_villains: list[SotmData]
     included_heroes: list[SotmData]
     included_environments: list[SotmData]
     included_variants: list[SotmData]
     possible_variants: list[SotmData]
+
     total_pool_size: int
     total_locations: int
     total_items: int
     team_villains: int
     required_scions: int
+
     required_client_version = (0, 0, 1)
     item_name_to_id = SotmItem.get_name_to_id()
     location_name_to_id = SotmLocation.get_name_to_id()
