@@ -446,8 +446,10 @@ class SotmWorld(World):
         else:
             total_scions = self.options.required_scions.value + self.options.extra_scions.value
             self.required_scions = self.options.required_scions.value
-        for _ in range(0, total_scions):
-            items.append(self.create_item("Scion of Oblivaeon"))
+        for i in range(0, total_scions):
+            items.append(SotmItem(self.player, "Scion of Oblivaeon", self.item_name_to_id["Scion of Oblivaeon"],
+                                  SotmCategory.Scion, ItemClassification.progression_skip_balancing
+                                  if i < self.required_scions else ItemClassification.useful))
 
         for _ in range(0, self.total_locations - len(items)):
             items.append(self.create_item("1 Undo"))
