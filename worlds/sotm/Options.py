@@ -1,7 +1,7 @@
 import typing
 from dataclasses import dataclass
 
-from Options import Toggle, DefaultOnToggle, Option, Range, Choice, OptionGroup, PerGameCommonOptions
+from Options import Toggle, DefaultOnToggle, Option, Range, Choice, OptionGroup, PerGameCommonOptions, ItemSet
 
 
 class EnableRookCity(DefaultOnToggle):
@@ -147,21 +147,43 @@ class SeparateVariantItems(Choice):
     default = "enable"
 
 
-class VillainDifficultyAffectsGoal(Toggle):
-    """If enabled, villains beaten on higher difficulties will count for more if goal is set to villains
-    This is cumulative
-    Normal = 1
-    Advanced = 1
-    Challenge = 1
-    Ultimate = 2"""
-    display_name = "Villain Difficulty Affects Goal"
-
-
 class RequiredVillains(Range):
     """The number of villains that must be defeated in order to goal"""
     display_name = "Required Villains"
     range_start = 0
-    range_end = 74 * 5
+    range_end = 74 * 40 - 20
+    default = 0
+
+
+class VillainPointsNormal(Range):
+    """The number of points beating a villain on Normal counts as for the required villains. This is cumulative"""
+    display_name = "Villain Normal Points"
+    range_start = 0
+    range_end = 10
+    default = 1
+
+
+class VillainPointsAdvanced(Range):
+    """The number of points beating a villain on Advanced counts as for the required villains. This is cumulative"""
+    display_name = "Villain Advanced Points"
+    range_start = 0
+    range_end = 10
+    default = 0
+
+
+class VillainPointsChallenge(Range):
+    """The number of points beating a villain on Challenge counts as for the required villains. This is cumulative"""
+    display_name = "Villain Challenge Points"
+    range_start = 0
+    range_end = 10
+    default = 0
+
+
+class VillainPointsUltimate(Range):
+    """The number of points beating a villain on Ultimate counts as for the required villains. This is cumulative"""
+    display_name = "Villain Ultimate Points"
+    range_start = 0
+    range_end = 10
     default = 0
 
 
@@ -202,6 +224,23 @@ class PoolSize(Range):
     range_start = 1
     range_end = 100
     default = 100
+
+
+class IncludeInPool(ItemSet):
+    """Items that will always be included in the pool.
+    This should be used if plando or priority locations for specific items or locations are used"""
+    display_name = "Include in Pool"
+
+
+class IncludeVariantsInPool(ItemSet):
+    """Variants that will always be unlockable given the items in the pool.
+    This should be used if plando or priority locations for specific locations are used"""
+    display_name = "Include Variants in Pool"
+
+
+class ExcludeFromPool(ItemSet):
+    """Items that will never be included in the pool."""
+    display_name = "Exclude from Pool"
 
 
 class LocationsPerVillainNormal(Range):
@@ -303,13 +342,19 @@ class SotmOptions(PerGameCommonOptions):
     enable_cauldron_promos: EnableCauldronPromos
     # Not yet implemented, current implementation is equivalent to if this is set to "enable"
     # separate_variant_items: SeparateVariantItems
-    villain_difficulty_affects_goal: VillainDifficultyAffectsGoal
     required_villains: RequiredVillains
+    villain_points_normal: VillainPointsNormal
+    villain_points_advanced: VillainPointsAdvanced
+    villain_points_challenge: VillainPointsChallenge
+    villain_points_ultimate: VillainPointsUltimate
     required_variants: RequiredVariants
     required_scions: RequiredScions
     extra_scions: ExtraScions
     scions_are_relative: ScionsAreRelative
     pool_size: PoolSize
+    include_in_pool: IncludeInPool
+    include_variants_in_pool: IncludeVariantsInPool
+    exclude_from_pool: ExcludeFromPool
     locations_per_villain_normal: LocationsPerVillainNormal
     locations_per_villain_advanced: LocationsPerVillainAdvanced
     locations_per_villain_challenge: LocationsPerVillainChallenge
@@ -344,9 +389,9 @@ sotm_option_groups = [
                                      EnableOmnitronIV,
                                      EnableTheCelestialTribunal, ]),
     OptionGroup("Fan-made Content", [EnableTheCauldron, EnableCauldronPromos]),
-    OptionGroup("Goal", [VillainDifficultyAffectsGoal, RequiredVillains, RequiredVariants, RequiredScions, ExtraScions,
-                         ScionsAreRelative]),
-    OptionGroup("Item Pool", [PoolSize]),
+    OptionGroup("Goal", [RequiredVillains, VillainPointsNormal, VillainPointsAdvanced, VillainPointsChallenge,
+                         VillainPointsUltimate, RequiredVariants, RequiredScions, ExtraScions, ScionsAreRelative]),
+    OptionGroup("Item Pool", [PoolSize, IncludeInPool, IncludeVariantsInPool, ExcludeFromPool]),
     OptionGroup("Location Density",
                 [LocationsPerVillainNormal, LocationsPerVillainAdvanced, LocationsPerVillainChallenge,
                  LocationsPerVillainUltimate, LocationsPerEnvironment, LocationsPerVariant]),
