@@ -1,7 +1,6 @@
-import typing
 from dataclasses import dataclass
 
-from Options import Toggle, DefaultOnToggle, Option, Range, Choice, OptionGroup, PerGameCommonOptions, ItemSet
+from Options import Toggle, DefaultOnToggle, Range, Choice, OptionGroup, PerGameCommonOptions, ItemSet
 
 
 class EnableRookCity(DefaultOnToggle):
