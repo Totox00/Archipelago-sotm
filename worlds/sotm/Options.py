@@ -1,6 +1,17 @@
 from dataclasses import dataclass
 
-from Options import Toggle, DefaultOnToggle, Range, Choice, OptionGroup, PerGameCommonOptions, ItemSet
+from Options import Toggle, DefaultOnToggle, Range, Choice, PerGameCommonOptions, ItemSet
+
+try:
+    from Options import OptionGroup
+except ImportError:
+    # In case this is used on 0.4.6
+    class OptionGroup:
+        name = "Placeholder"
+        options = []
+
+        def __init__(self, name, options):
+            pass
 
 
 class EnableRookCity(DefaultOnToggle):
@@ -386,7 +397,7 @@ sotm_option_groups = [
                                      EnableSilverGulch1883,
                                      EnableTheFinalWasteland,
                                      EnableOmnitronIV,
-                                     EnableTheCelestialTribunal, ]),
+                                     EnableTheCelestialTribunal]),
     OptionGroup("Fan-made Content", [EnableTheCauldron, EnableCauldronPromos]),
     OptionGroup("Goal", [RequiredVillains, VillainPointsNormal, VillainPointsAdvanced, VillainPointsChallenge,
                          VillainPointsUltimate, RequiredVariants, RequiredScions, ExtraScions, ScionsAreRelative]),
