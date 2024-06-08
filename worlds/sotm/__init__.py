@@ -457,11 +457,12 @@ class SotmWorld(World):
             if total_portion > 1000:
                 total_portion = 1000
             total_scions = math.floor((self.total_locations - len(items)) * total_portion / 1000)
-            self.required_scions = math.floor((self.total_locations - len(items))
-                                              * self.options.required_scions.value / 1000)
+            self.required_scions = math.floor(total_scions * self.options.required_scions.value
+                                              / (self.options.required_scions.value + self.options.extra_scions.value))
         else:
             total_scions = self.options.required_scions.value + self.options.extra_scions.value
             self.required_scions = self.options.required_scions.value
+
         for i in range(0, total_scions):
             items.append(SotmItem(self.player, "Scion of Oblivaeon", self.item_name_to_id["Scion of Oblivaeon"],
                                   SotmCategory.Scion, ItemClassification.progression_skip_balancing
@@ -497,7 +498,7 @@ class SotmWorld(World):
 
     def set_rules(self) -> None:
         self.multiworld.completion_condition[self.player] = lambda state: (
-                state.has("Scion of Oblivaeon", self.player, self.options.required_scions.value)
+                state.has("Scion of Oblivaeon", self.player, self.required_scions)
                 and [v.rule(state, self.player) for v in self.possible_variants].count(True)
                 >= self.options.required_variants.value
                 and [state.has(v.name, self.player) for v in self.included_villains].count(True)
