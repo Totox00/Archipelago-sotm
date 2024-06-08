@@ -222,6 +222,11 @@ class SotmWorld(World):
         while len(self.included_environments) < self.options.start_environments.value:
             self.include_data(self.random.choice(self.available_environments))
 
+        # Oblivaeon requires 5 environments if part of goal
+        if self.options.required_scions.value > 0:
+            while len(self.included_environments) < 5:
+                self.include_data(self.random.choice(self.available_environments))
+
         # Add heroes and hero variants until there are enough for the start hero count
         # Make sure there are not too few due to some being variants of the same hero
         offset = 0
@@ -501,16 +506,33 @@ class SotmWorld(World):
         return "1 Undo"
 
     def set_rules(self) -> None:
-        self.multiworld.completion_condition[self.player] = lambda state: (
-                state.has("Scion of Oblivaeon", self.player, self.required_scions)
-                and [v.rule(state, self.player) for v in self.possible_variants].count(True)
-                >= self.options.required_variants.value
-                and [state.has(v.name, self.player) for v in self.included_villains].count(True)
-                * self.total_possible_villain_points
-                - (self.total_possible_villain_points_duo_offset
-                    if state.has("Spite: Agent of Gloom", self.player)
-                    and state.has("Skinwalker Gloomweaver", self.player) else 0)
-                >= self.options.required_villains.value)
+        self.multiworld.completion_condition[self.player] = lambda state: (self.villain_goal(state)
+                                                                           and self.variant_goal(state)
+                                                                           and self.scion_goal(state))
+
+    def villain_goal(self, state) -> bool:
+        if self.options.required_villains.value == 0:
+            return True
+
+        offset = (self.total_possible_villain_points_duo_offset
+                  if state.has("Spite: Agent of Gloom", self.player)
+                  and state.has("Skinwalker Gloomweaver", self.player) else 0)
+
+        return ([state.has(v.name, self.player) for v in self.included_villains].count(True)
+                * self.total_possible_villain_points - offset >= self.options.required_villains.value)
+
+    def variant_goal(self, state) -> bool:
+        if self.options.required_variants.value == 0:
+            return True
+
+        return ([v.rule(state, self.player) for v in self.possible_variants].count(True)
+                >= self.options.required_variants.value)
+
+    def scion_goal(self, state) -> bool:
+        if self.required_scions == 0:
+            return True
+        return (state.has("Scion of Oblivaeon", self.player, self.required_scions)
+                and [state.has(v.name, self.player) for v in self.included_environments].count(True) >= 5)
 
     def fill_slot_data(self) -> Dict[str, object]:
         return {
