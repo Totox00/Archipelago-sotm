@@ -287,7 +287,7 @@ class LocationsPerVillainUltimate(Range):
 
 class LocationsPerEnvironment(Range):
     """The quantity of locations done for each environment on any difficulty"""
-    display_name = "Locations Per Variant"
+    display_name = "Locations Per Environment"
     range_start = 0
     range_end = 5
     default = 1
