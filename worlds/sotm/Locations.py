@@ -95,7 +95,7 @@ class SotmLocation(Location):
                 next_group = {
                      f"{name} - {difficulty} #{n}" for name
                      in villain_names if
-                     name != "Spite: Agent of Gloom" and name != "Gloomweaver Skinwalker"}
+                     name != "Spite: Agent of Gloom" and name != "Skinwalker Gloomweaver"}
                 next_group.add(f"Spite: Agent of Gloom and Skinwalker Gloomweaver - {difficulty} #{n}")
                 location_name_groups.update({f"Villains - {difficulty} #{n}": next_group})
             for difficulty in difficulties:
