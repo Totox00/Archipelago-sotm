@@ -37,7 +37,7 @@ class SotmWorld(World):
     game = "Sentinels of the Multiverse"
     options_dataclass = SotmOptions
     options: SotmOptions
-    topology_present: bool = True
+    topology_present: bool = False
     web = SotmWeb()
     data_version = 1
     base_id = 27181774
