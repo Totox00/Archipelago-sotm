@@ -447,6 +447,10 @@ class SotmWorld(World):
             if environment.name not in exclude:
                 items.append(self.create_item_from_data(environment))
 
+        for hero in self.included_heroes:
+            if hero.name not in exclude:
+                items.append(self.create_item_from_data(hero))
+
         for variant in self.included_variants:
             if variant.name not in exclude:
                 if variant.category == SotmCategory.Variant:
