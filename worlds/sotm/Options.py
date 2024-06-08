@@ -253,6 +253,38 @@ class ExcludeFromPool(ItemSet):
     display_name = "Exclude from Pool"
 
 
+class VillainWeight(Range):
+    """The weight that items added to the pool are villains"""
+    display_name = "Villain Weight"
+    range_start = 1
+    range_end = 100
+    default = 10
+
+
+class EnvironmentWeight(Range):
+    """The weight that items added to the pool are environments"""
+    display_name = "Environment Weight"
+    range_start = 1
+    range_end = 100
+    default = 20
+
+
+class HeroWeight(Range):
+    """The weight that items added to the pool are heroes"""
+    display_name = "Hero Weight"
+    range_start = 1
+    range_end = 100
+    default = 30
+
+
+class VariantWeight(Range):
+    """The weight that items added to the pool are variants"""
+    display_name = "Hero Weight"
+    range_start = 1
+    range_end = 100
+    default = 60
+
+
 class LocationsPerVillainNormal(Range):
     """The quantity of locations done for each villain on normal difficulty"""
     display_name = "Locations Per Villain Normal"
@@ -365,6 +397,10 @@ class SotmOptions(PerGameCommonOptions):
     include_in_pool: IncludeInPool
     include_variants_in_pool: IncludeVariantsInPool
     exclude_from_pool: ExcludeFromPool
+    villain_weight: VillainWeight
+    environment_weight: EnvironmentWeight
+    hero_weight: HeroWeight
+    variant_weight: VariantWeight
     locations_per_villain_normal: LocationsPerVillainNormal
     locations_per_villain_advanced: LocationsPerVillainAdvanced
     locations_per_villain_challenge: LocationsPerVillainChallenge
@@ -401,7 +437,8 @@ sotm_option_groups = [
     OptionGroup("Fan-made Content", [EnableTheCauldron, EnableCauldronPromos]),
     OptionGroup("Goal", [RequiredVillains, VillainPointsNormal, VillainPointsAdvanced, VillainPointsChallenge,
                          VillainPointsUltimate, RequiredVariants, RequiredScions, ExtraScions, ScionsAreRelative]),
-    OptionGroup("Item Pool", [PoolSize, IncludeInPool, IncludeVariantsInPool, ExcludeFromPool]),
+    OptionGroup("Item Pool", [PoolSize, IncludeInPool, IncludeVariantsInPool, ExcludeFromPool,
+                              VillainWeight, EnvironmentWeight, HeroWeight, VariantWeight]),
     OptionGroup("Location Density",
                 [LocationsPerVillainNormal, LocationsPerVillainAdvanced, LocationsPerVillainChallenge,
                  LocationsPerVillainUltimate, LocationsPerEnvironment, LocationsPerVariant]),

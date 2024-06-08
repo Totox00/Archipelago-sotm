@@ -241,11 +241,47 @@ class SotmWorld(World):
             self.include_data(chosen)
 
         # Add random items to included items until pool size is satisfied
+        # Adjust for items added previously so weights reflect the full pool
+        adjust_villains = len(self.included_villains)
+        adjust_environments = len(self.included_environments)
+        adjust_heroes = len(self.included_heroes)
+        adjust_variants = len(self.included_variants)
+        weights = [self.options.villain_weight.value, self.options.environment_weight.value,
+                   self.options.hero_weight.value, self.options.variant_weight.value]
+        weight_boundaries = [sum(weights[0:i]) for i in range(1, 5)]
         while (self.total_items / self.total_pool_size) * 100 < self.options.pool_size.value:
-            self.include_data(chosen := self.random.choice(self.available()))
-            if chosen.category == SotmCategory.TeamVillain:
-                self.team_villains += 1
-                self.ensure_team_villains()
+            roll = self.random.randint(0, weight_boundaries[3] - 1)
+            chosen = None
+            if roll < weight_boundaries[0]:
+                if adjust_villains > 0:
+                    adjust_villains -= 1
+                elif len(self.available_villains) > 0:
+                    chosen = self.random.choice(self.available_villains)
+            elif roll < weight_boundaries[1]:
+                if adjust_environments > 0:
+                    adjust_environments -= 1
+                elif len(self.available_environments) > 0:
+                    chosen = self.random.choice(self.available_environments)
+            elif roll < weight_boundaries[2]:
+                if adjust_heroes > 0:
+                    adjust_heroes -= 1
+                elif len(self.available_heroes) > 0:
+                    chosen = self.random.choice(self.available_heroes)
+            else:
+                if adjust_variants > 0:
+                    adjust_variants -= 1
+                elif len(self.available_variants) > 0:
+                    chosen = self.random.choice(self.available_variants)
+            if chosen:
+                self.include_data(chosen)
+                if chosen.category == SotmCategory.TeamVillain:
+                    self.team_villains += 1
+                    if self.team_villains == 1:
+                        adjust_villains += 2
+                    elif self.team_villains == 2:
+                        adjust_villains += 1
+
+                    self.ensure_team_villains()
 
         # Add random items from included items to precollected until start counts are satisfied
         start_hero_bases = []
