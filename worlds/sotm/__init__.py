@@ -67,6 +67,7 @@ class SotmWorld(World):
     required_variants: int
 
     total_possible_villain_points: int
+    max_points_per_villain: int
     total_possible_villain_points_duo_offset: int
 
     required_client_version = (0, 0, 1)
@@ -150,12 +151,13 @@ class SotmWorld(World):
                                           if d.rule is not None and d.rule(full_state, self.player)]
         self.total_pool_size = len(available)
 
-        self.total_possible_villain_points = len(self.available_villains) * (
+        self.max_points_per_villain = (
             self.options.villain_points_normal.value
             + self.options.villain_points_advanced.value
             + self.options.villain_points_challenge.value
             + self.options.villain_points_ultimate.value
         )
+        self.total_possible_villain_points = len(self.available_villains) * self.max_points_per_villain
 
         self.total_possible_villain_points_duo_offset = (self.options.villain_points_challenge.value
                                                          + self.options.villain_points_ultimate.value)
@@ -547,22 +549,22 @@ class SotmWorld(World):
                                                                            and self.scion_goal(state))
 
     def villain_goal(self, state) -> bool:
-        if self.options.required_villains.value == 0:
+        if self.required_villains == 0:
             return True
 
         offset = (self.total_possible_villain_points_duo_offset
                   if state.has("Spite: Agent of Gloom", self.player)
                   and state.has("Skinwalker Gloomweaver", self.player) else 0)
 
-        return ([state.has(v.name, self.player) for v in self.included_villains].count(True)
-                * self.total_possible_villain_points - offset >= self.options.required_villains.value)
+        return (([state.has(v.name, self.player) for v in self.included_villains].count(True)
+                * self.max_points_per_villain - offset) >= self.required_villains)
 
     def variant_goal(self, state) -> bool:
-        if self.options.required_variants.value == 0:
+        if self.required_variants == 0:
             return True
 
         return ([v.rule(state, self.player) for v in self.possible_variants].count(True)
-                >= self.options.required_variants.value)
+                >= self.required_variants)
 
     def scion_goal(self, state) -> bool:
         if self.required_scions == 0:
@@ -573,8 +575,8 @@ class SotmWorld(World):
     def fill_slot_data(self) -> Dict[str, object]:
         return {
             "required_scions": self.required_scions,
-            "required_variants": self.options.required_variants.value,
-            "required_villains": self.options.required_villains.value,
+            "required_variants": self.required_variants,
+            "required_villains": self.required_villains,
             "villain_difficulty_points":
                 [self.options.villain_points_normal.value, self.options.villain_points_advanced.value,
                  self.options.villain_points_challenge.value, self.options.villain_points_ultimate.value],
