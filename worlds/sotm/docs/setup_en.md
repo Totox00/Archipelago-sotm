@@ -1,9 +1,9 @@
 # Sentinels of the Multiverse Setup Guide
 
-## Requirements Software
+## Required Software
 
 - Access to a way to play Sentinels of the Multiverse, such as physical cardboard and ink, the digital edition on Steam, or through Tabletop Simulator
-- [Sentinels of the Multiverse CLI Client](https://github.com/Totox00/ap-sotm-client)
+- [Sentinels of the Multiverse CLI Client](https://github.com/Totox00/ap-sotm-client) or [Sentinels of the Multiverse Browser Client (Requires no installation)](https://totox00.github.io/ap-sotm-client/index.html)
 
 ## General Concept
 
