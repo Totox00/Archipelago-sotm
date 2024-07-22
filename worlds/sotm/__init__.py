@@ -11,6 +11,7 @@ from .Locations import SotmLocation
 from .Options import SotmOptions, sotm_option_groups
 from .Data import SotmSource, SotmData, SotmCategory, general_access_rule, data, has_all_of, difficulties, SotmState, \
     any_variant, fanmade_sources, has_fanmade
+from .Id import item_name_to_id, location_name_to_id
 
 
 class SotmWeb(WebWorld):
@@ -71,8 +72,8 @@ class SotmWorld(World):
     total_possible_villain_points_duo_offset: int
 
     required_client_version = (0, 0, 1)
-    item_name_to_id = SotmItem.get_name_to_id()
-    location_name_to_id = SotmLocation.get_name_to_id()
+    item_name_to_id = item_name_to_id
+    location_name_to_id = location_name_to_id
     item_name_groups = SotmItem.get_item_name_groups()
     location_name_groups = SotmLocation.get_location_name_groups()
 

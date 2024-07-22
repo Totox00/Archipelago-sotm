@@ -28,53 +28,6 @@ class SotmLocation(Location):
             self.access_rule = lambda state: state.has(req, player)
 
     @staticmethod
-    def get_name_to_id() -> dict:
-        next_id = 27181774
-        output = {}
-
-        duo = 0
-
-        for location_data in data:
-            match location_data.category:
-                case SotmCategory.VillainVariant:
-                    if location_data.name == "Spite: Agent of Gloom" or location_data.name == "Skinwalker Gloomweaver":
-                        for difficulty in ["Normal", "Advanced"]:
-                            for n in range(1, 6):
-                                output.update({f"{location_data.name} - {difficulty} #{n}": next_id})
-                                next_id += 1
-
-                        duo += 1
-                        if duo == 2:
-                            duo_name = "Spite: Agent of Gloom and Skinwalker Gloomweaver"
-                            for difficulty in ["Challenge", "Ultimate"]:
-                                for n in range(1, 6):
-                                    output.update({f"{duo_name} - {difficulty} #{n}": next_id})
-                                    next_id += 1
-                    else:
-                        for difficulty in difficulties:
-                            for n in range(1, 6):
-                                output.update({f"{location_data.name} - {difficulty} #{n}": next_id})
-                                next_id += 1
-                    for n in range(1, 6):
-                        output.update({f"{location_data.name} - Unlock #{n}": next_id})
-                        next_id += 1
-                case SotmCategory.Villain | SotmCategory.TeamVillain:
-                    for difficulty in difficulties:
-                        for n in range(1, 6):
-                            output.update({f"{location_data.name} - {difficulty} #{n}": next_id})
-                            next_id += 1
-                case SotmCategory.Environment:
-                    for n in range(1, 6):
-                        output.update({f"{location_data.name} - Any Difficulty #{n}": next_id})
-                        next_id += 1
-                case SotmCategory.Variant:
-                    if location_data.name != "Completionist Guise" and not has_fanmade(location_data.sources):
-                        for n in range(1, 6):
-                            output.update({f"{location_data.name} - Unlock #{n}": next_id})
-                            next_id += 1
-        return output
-
-    @staticmethod
     def get_location_name_groups() -> dict:
         location_name_groups = {
             **{f"Environments #{n}": {f"{d.name} - Any Difficulty #{n}" for d in data
