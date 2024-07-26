@@ -512,7 +512,7 @@ _base_to_variants: dict[str, list[str]] = {
 
 
 def any_variant(base: str, state: CollectionState | SotmState, player: int) -> bool:
-    return True in (state.has(name, player) for name in _base_to_variants[base])
+    return state.has(base, player) or True in (state.has(name, player) for name in _base_to_variants[base])
 
 
 def team_villain_count(state: CollectionState | SotmState, player: int) -> bool:
@@ -549,8 +549,9 @@ def freedom_five_reqs(state: CollectionState | SotmState, player: int) -> bool:
 
 
 def general_access_rule(state: CollectionState, player: int):
-    return ([d.category == SotmCategory.Hero and any_variant(d.name, state, player) for d in data].count(True) >= 3
-            and True in (d.category == SotmCategory.Environment and state.has(d.name, player) for d in data)
-            and (team_villain_count(state, player)
-                 or True in ((d.category == SotmCategory.Villain or d.category == SotmCategory.VillainVariant)
-                             and state.has(d.name, player) for d in data)))
+    hero_count = [any_variant(d.name, state, player) for d in data if d.category == SotmCategory.Hero].count(True)
+    environment = True in (state.has(d.name, player) for d in data if d.category == SotmCategory.Environment)
+    villain = True in (state.has(d.name, player) for d in data
+                       if d.category == SotmCategory.Villain or d.category == SotmCategory.VillainVariant)
+
+    return hero_count >= 3 and environment and (team_villain_count(state, player) or villain)
