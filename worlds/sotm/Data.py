@@ -24,6 +24,7 @@ class SotmCategory(IntEnum):
     Variant = 5
     VillainVariant = 6
     Filler = 7
+    Trap = 8
 
 
 class SotmSource(IntEnum):
@@ -52,11 +53,31 @@ class SotmSource(IntEnum):
     CauldronPromos = 22
 
 
-fanmade_sources = [SotmSource.TheCauldron, SotmSource.CauldronPromos]
-
-
-def has_fanmade(sources: list[SotmSource]) -> bool:
-    return True in (source in fanmade_sources for source in sources)
+sources = {
+    SotmSource.RookCity: {"name": "Rook City", "default": True},
+    SotmSource.InfernalRelics: {"name": "Infernal Relics", "default": True},
+    SotmSource.ShatteredTimelines: {"name": "Shattered Timelines", "default": True},
+    SotmSource.WrathOfTheCosmos: {"name": "Wrath of the Cosmos", "default": True},
+    SotmSource.Vengeance: {"name": "Vengeance", "default": True},
+    SotmSource.VillainsOfTheMultiverse: {"name": "Villains of the Multiverse", "default": True},
+    SotmSource.Oblivaeon: {"name": "Oblivaeon", "default": True},
+    SotmSource.Unity: {"name": "Unity", "default": True},
+    SotmSource.TheScholar: {"name": "The Scholar", "default": True},
+    SotmSource.Guise: {"name": "Guise", "default": True},
+    SotmSource.Stuntman: {"name": "Stuntman", "default": True},
+    SotmSource.Benchmark: {"name": "Benchmark", "default": True},
+    SotmSource.TheVoidGuard: {"name": "The Void Guard", "default": True},
+    SotmSource.Ambuscade: {"name": "Ambuscade", "default": True},
+    SotmSource.MissInformation: {"name": "Miss Information", "default": True},
+    SotmSource.WagerMaster: {"name": "Wager Master", "default": True},
+    SotmSource.Chokepoint: {"name": "Chokepoint", "default": True},
+    SotmSource.SilverGulch1883: {"name": "Silver Gulch 1883", "default": True},
+    SotmSource.TheFinalWasteland: {"name": "The Final Wasteland", "default": True},
+    SotmSource.OmnitronIV: {"name": "Omnitron IV", "default": True},
+    SotmSource.TheCelestialTribunal: {"name": "The Celestial Tribunal", "default": True},
+    SotmSource.TheCauldron: {"name": "The Cauldron", "default": False},
+    SotmSource.CauldronPromos: {"name": "Cauldron Promos", "default": False},
+}
 
 
 class SotmData(NamedTuple):
@@ -278,7 +299,7 @@ data = [SotmData(*row) for row in [
     ("Captain Cosmic Requital", [SotmSource.WrathOfTheCosmos], SotmCategory.Variant, "Captain Cosmic",
      lambda state, player: state.has("Captain Cosmic", player)
         and any_variant("Infinitor", state, player)),
-    ("Chrono-Ranger The Best of Times", [SotmSource.ShatteredTimelines], SotmCategory.Variant, "Chrono-Ranger",
+    ("Chrono-Ranger the Best of Times", [SotmSource.ShatteredTimelines], SotmCategory.Variant, "Chrono-Ranger",
      lambda state, player: any_variants_of(["Chrono-Ranger", "Tachyon"], state, player)
         and has_all_of(["Ambuscade", "Wagner Mars Base"], state, player)),
     ("Dark Conductor Argent Adept", [SotmSource.InfernalRelics], SotmCategory.Variant, "Argent Adept",

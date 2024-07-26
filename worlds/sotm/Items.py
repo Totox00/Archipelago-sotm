@@ -2,7 +2,7 @@ from typing import Optional
 
 from BaseClasses import Item, ItemClassification
 
-from .Data import data, SotmData, SotmSource, SotmCategory
+from .Data import data, SotmCategory
 
 
 class SotmItem(Item):

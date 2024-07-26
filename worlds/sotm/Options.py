@@ -1,149 +1,18 @@
 from dataclasses import dataclass
 
-from Options import Toggle, DefaultOnToggle, Range, Choice, PerGameCommonOptions, ItemSet
+from schema import Schema, And
 
-try:
-    from Options import OptionGroup
-except ImportError:
-    # In case this is used on 0.4.6
-    class OptionGroup:
-        name = "Placeholder"
-        options = []
-
-        def __init__(self, name, options):
-            pass
+from Options import Toggle, Range, Choice, PerGameCommonOptions, ItemSet, OptionDict, OptionSet, OptionGroup
+from worlds.sotm.Data import sources
 
 
-class EnableRookCity(DefaultOnToggle):
-    """Adds Rook City content to the pool"""
-    display_name = "Enable Rook City"
-
-
-class EnableInfernalRelics(DefaultOnToggle):
-    """Adds Infernal Relics content to the pool"""
-    display_name = "Enable Infernal Relics"
-
-
-class EnableShatteredTimelines(DefaultOnToggle):
-    """Adds Shattered Timelines content to the pool"""
-    display_name = "Enable Shattered Timelines"
-
-
-class EnableWrathOfTheCosmos(DefaultOnToggle):
-    """Adds Wrath of the Cosmos content to the pool"""
-    display_name = "Enable Wrath of the Cosmos"
-
-
-class EnableVengeance(DefaultOnToggle):
-    """Adds Vengeance content to the pool"""
-    display_name = "Enable Vengeance"
-
-
-class EnableVillainsOfTheMultiverse(DefaultOnToggle):
-    """Adds Villains of the Multiverse content to the pool"""
-    display_name = "Enable Villains of the Multiverse"
-
-
-class EnableOblivaeon(DefaultOnToggle):
-    """Adds Oblivaeon content to the pool"""
-    display_name = "Enable Oblivaeon"
-
-
-class EnableUnity(DefaultOnToggle):
-    """Adds Unity to the pool
-    This is part of Mini-Pack 1 in the digital version"""
-    display_name = "Enable Unity"
-
-
-class EnableTheScholar(DefaultOnToggle):
-    """Adds The Scholar to the pool
-    This is part of Mini-Pack 2 in the digital version"""
-    display_name = "Enable The Scholar"
-
-
-class EnableGuise(DefaultOnToggle):
-    """Adds Guise to the pool
-    This is part of Mini-Pack 3 in the digital version"""
-    display_name = "Enable Guise"
-
-
-class EnableStuntman(DefaultOnToggle):
-    """Adds Stuntman to the pool
-    This is part of Mini-Pack 4 in the digital version"""
-    display_name = "Enable Stuntman"
-
-
-class EnableBenchmark(DefaultOnToggle):
-    """Adds Benchmark to the pool
-    This is part of Mini-Pack 4 in the digital version"""
-    display_name = "Enable Benchmark"
-
-
-class EnableTheVoidGuard(DefaultOnToggle):
-    """Adds The Void Guard to the pool
-    This is part of Mini-Pack 5 in the digital version"""
-    display_name = "Enable The Void Guard"
-
-
-class EnableAmbuscade(DefaultOnToggle):
-    """Adds Ambuscade to the pool
-    This is part of Mini-Pack 1 in the digital version"""
-    display_name = "Enable Ambuscade"
-
-
-class EnableMissInformation(DefaultOnToggle):
-    """Adds MissInformation to the pool
-    This is part of Mini-Pack 2 in the digital version"""
-    display_name = "Enable MissInformation"
-
-
-class EnableWagerMaster(DefaultOnToggle):
-    """Adds WagerMaster to the pool
-    This is part of Mini-Pack 3 in the digital version"""
-    display_name = "Enable WagerMaster"
-
-
-class EnableChokepoint(DefaultOnToggle):
-    """Adds Chokepoint to the pool
-    This is part of Mini-Pack 4 in the digital version"""
-    display_name = "Enable Chokepoint"
-
-
-class EnableSilverGulch1883(DefaultOnToggle):
-    """Adds Silver Gulch 1883 to the pool
-    This is part of Mini-Pack 1 in the digital version"""
-    display_name = "Enable Silver Gulch 1883"
-
-
-class EnableTheFinalWasteland(DefaultOnToggle):
-    """Adds The Final Wasteland to the pool
-    This is part of Mini-Pack 2 in the digital version"""
-    display_name = "Enable The Final Wasteland"
-
-
-class EnableOmnitronIV(DefaultOnToggle):
-    """Adds Omnitron IV to the pool
-    This is part of Mini-Pack 3 in the digital version"""
-    display_name = "Enable Omnitron IV"
-
-
-class EnableTheCelestialTribunal(DefaultOnToggle):
-    """Adds The Celestial Tribunal to the pool
-    This is part of Mini-Pack 4 in the digital version"""
-    display_name = "Enable The Celestial Tribunal"
-
-
-class EnableTheCauldron(Toggle):
-    """Adds content from the fan-made The Cauldron expansion to the pool"""
-    display_name = "Enable The Cauldron"
-
-
-class EnableCauldronPromos(Toggle):
-    """Adds content from the fan-made Cauldron Promos expansion to the pool
-
-    These are cauldron-themed variants for official heroes.
-    Variants for The Cauldron content is included in the option above"""
-    display_name = "Enable Cauldron Promos"
+class EnabledSets(OptionSet):
+    """
+    Specify all sets that content can be used for. Content from the base game is always included.
+    """
+    display_name = "Enabled Sets"
+    default = frozenset(source["name"] for source in sources.values() if source["default"])
+    valid_keys = [source["name"] for source in sources.values()]
 
 
 class SeparateVariantItems(Choice):
@@ -165,36 +34,23 @@ class RequiredVillains(Range):
     default = 0
 
 
-class VillainPointsNormal(Range):
-    """The number of points beating a villain on Normal counts as for the required villains. This is cumulative"""
-    display_name = "Villain Normal Points"
-    range_start = 0
-    range_end = 10
-    default = 1
-
-
-class VillainPointsAdvanced(Range):
-    """The number of points beating a villain on Advanced counts as for the required villains. This is cumulative"""
-    display_name = "Villain Advanced Points"
-    range_start = 0
-    range_end = 10
-    default = 0
-
-
-class VillainPointsChallenge(Range):
-    """The number of points beating a villain on Challenge counts as for the required villains. This is cumulative"""
-    display_name = "Villain Challenge Points"
-    range_start = 0
-    range_end = 10
-    default = 0
-
-
-class VillainPointsUltimate(Range):
-    """The number of points beating a villain on Ultimate counts as for the required villains. This is cumulative"""
-    display_name = "Villain Ultimate Points"
-    range_start = 0
-    range_end = 10
-    default = 0
+class VillainPoints(OptionDict):
+    """
+    The number of points beating a villain counts as for the required villains. This is cumulative
+    If you want a difficulty to award no additional points, set it to 0 (Do not delete the entry outright!).
+    To make difficulty irrelevant, set normal to 1 and all else to 0.
+    """
+    display_name = "Villain Points"
+    schema = Schema({
+        difficulty: And(int, lambda n: n >= 0)
+        for difficulty in ["normal", "advanced", "challenge", "ultimate"]
+    })
+    default = {
+        "normal": 1,
+        "advanced": 0,
+        "challenge": 0,
+        "ultimate": 0
+    }
 
 
 class RequiredVariants(Range):
@@ -213,16 +69,8 @@ class RequiredScions(Range):
     default = 10
 
 
-class ExtraScions(Range):
-    """The number of additional scions in the pool"""
-    display_name = "Extra Scions"
-    range_start = 0
-    range_end = 1000
-    default = 0
-
-
 class ScionsAreRelative(Toggle):
-    """Changes it so the scion count options instead determine the portion of filler items that are replaced with scions
+    """Makes it so Required Scions instead dictates how large a portion of filler items are required scions
     1000 means that all are replaced"""
     display_name = "Scions are Relative"
 
@@ -253,194 +101,152 @@ class ExcludeFromPool(ItemSet):
     display_name = "Exclude from Pool"
 
 
-class VillainWeight(Range):
-    """The weight that items added to the pool are villains"""
-    display_name = "Villain Weight"
-    range_start = 1
-    range_end = 100
-    default = 10
+class ItemWeights(OptionDict):
+    """
+    Specify the weights determining the weights for different item types.
+    If you want no items of a type to be added to the item pool, set it to 0 (Do not delete the entry outright!).
+    This only dictates additional items added after items required for goal or that are specified to always be included.
+    """
+    display_name = "Item Weights"
+    schema = Schema({
+        item: And(int, lambda n: n >= 0)
+        for item in ["villain", "environment", "hero", "variant"]
+    })
+    default = {
+        "villain": 10,
+        "environment": 20,
+        "hero": 30,
+        "variant": 60
+    }
 
 
-class EnvironmentWeight(Range):
-    """The weight that items added to the pool are environments"""
-    display_name = "Environment Weight"
-    range_start = 1
-    range_end = 100
-    default = 20
+class FillerWeights(OptionDict):
+    """
+    Specify the weights determining the weights for different item types.
+    Unspecified types default to weight 0 and can be safely excluded, but the total weight must be >0.
+    Each entry consists of a filler type and zero or more modifiers, separated by a ;
+    Valid filler types are:
+    - StartHandsize
+    - HeroHp
+    - Mulligan
+    - HeroDamageDealt
+    - HeroDamageTaken
+    - HeroCardPlay
+    - HeroPower
+    - HeroCardDraw
+    - VillainHp
+    - VillainDamageDealt
+    - VillainDamageTaken
+    - VillainCardPlays
+    - VillainStartCardPlays
+    - HeroCannotPlay
+    - HeroCannotPower
+    - HeroCannotDraw
+    - HeroCannotDamage
+    - Scion
+    "any" and "all" can also be used to refer to any filler other than extra Scions
+    Valid modifiers are:
+    - +: Only the helpful version of the filler (note that some modifiers do not have a helpful version)
+    - -: Only the harmful version of the filler (note that some modifiers do not have a harmful version)
+    - *: Filler only affects a specific hero or villain
+    - **: Filler only affects a specific hero variant
+    - T: Filler only affects a specific damage type
+    """
+    display_name = "Trap Weights"
+    schema = Schema({str: And(int, lambda n: n >= 0)})
+    default = {
+        "HeroHp;*": 5,
+        "StartHandsize;+*": 4,
+        "StartHandsize;-*": 2,
+        "Mulligan;+*": 1,
+        "HeroDamageDealt;+*": 2,
+        "HeroDamageDealt;-*": 1,
+        "HeroDamageTaken;+*": 1,
+        "HeroDamageTaken;-*": 2,
+        "HeroPower;+*": 2,
+        "HeroPower;-*": 1,
+        "HeroCardDraw;+*": 3,
+        "HeroCardDraw;-*": 1,
+        "VillainHp;": 5,
+        "VillainDamageTaken;+": 2,
+        "VillainDamageTaken;-": 1,
+        "VillainDamageDealt;": 2,
+        "VillainCardPlays;-": 1,
+        "VillainStartCardPlays;-": 3,
+    }
 
 
-class HeroWeight(Range):
-    """The weight that items added to the pool are heroes"""
-    display_name = "Hero Weight"
-    range_start = 1
-    range_end = 100
-    default = 30
+class LocationDensity(OptionDict):
+    """
+    Specify the number of items placed at each location.
+    If you want no items to be placed at a location, set it to 0 (Do not delete the entry outright!).
+    Each location can have at most 5 items.
+    """
+    display_name = "Location Density"
+    schema = Schema({
+        "villain": {
+            "normal": And(int, lambda n: 0 <= n <= 5),
+            "advanced": And(int, lambda n: 0 <= n <= 5),
+            "challenge": And(int, lambda n: 0 <= n <= 5),
+            "ultimate": And(int, lambda n: 0 <= n <= 5)
+        },
+        "environment": And(int, lambda n: 0 <= n <= 5),
+        "variant": And(int, lambda n: 0 <= n <= 5),
+    })
+    default = {
+        "villain": {
+            "normal": 1,
+            "advanced": 1,
+            "challenge": 1,
+            "ultimate": 1
+        },
+        "environment": 1,
+        "variant": 1,
+    }
 
 
-class VariantWeight(Range):
-    """The weight that items added to the pool are variants"""
-    display_name = "Hero Weight"
-    range_start = 1
-    range_end = 100
-    default = 60
-
-
-class LocationsPerVillainNormal(Range):
-    """The quantity of locations done for each villain on normal difficulty"""
-    display_name = "Locations Per Villain Normal"
-    range_start = 0
-    range_end = 5
-    default = 1
-
-
-class LocationsPerVillainAdvanced(Range):
-    """The quantity of locations done for each villain on advanced difficulty"""
-    display_name = "Locations Per Villain Advanced"
-    range_start = 0
-    range_end = 5
-    default = 1
-
-
-class LocationsPerVillainChallenge(Range):
-    """The quantity of locations done for each villain on challenge difficulty"""
-    display_name = "Locations Per Villain Challenge"
-    range_start = 0
-    range_end = 5
-    default = 1
-
-
-class LocationsPerVillainUltimate(Range):
-    """The quantity of locations done for each villain on ultimate difficulty"""
-    display_name = "Locations Per Villain Ultimate"
-    range_start = 0
-    range_end = 5
-    default = 1
-
-
-class LocationsPerEnvironment(Range):
-    """The quantity of locations done for each environment on any difficulty"""
-    display_name = "Locations Per Environment"
-    range_start = 0
-    range_end = 5
-    default = 1
-
-
-class LocationsPerVariant(Range):
-    """The quantity of locations done for each variant unlock condition"""
-    display_name = "Locations Per Variant"
-    range_start = 0
-    range_end = 5
-    default = 1
-
-
-class StartHeroes(Range):
-    """The amount of heroes you start with"""
-    display_name = "Start Heroes"
-    range_start = 0
-    range_end = 100
-    default = 5
-
-
-class StartVillains(Range):
-    """The amount of villains you start with"""
-    display_name = "Start Villains"
-    range_start = 0
-    range_end = 25
-    default = 2
-
-
-class StartEnvironment(Range):
-    """The amount of environments you start with"""
-    display_name = "Start Environments"
-    range_start = 0
-    range_end = 25
-    default = 2
+class StartingItems(OptionDict):
+    """
+    Specify the number of each type of item you start with.
+    If you want to start with no items of a type, set it to 0 (Do not delete the entry outright!).
+    No locations are available until you have at least 3 heroes, 1 environment, and either 1 villain or 3 team villains.
+    """
+    display_name = "Starting Items"
+    schema = Schema({
+        "heroes": And(int, lambda n: n >= 0),
+        "villains": And(int, lambda n: n >= 0),
+        "environments": And(int, lambda n: n >= 0),
+    })
+    default = {
+        "heroes": 5,
+        "villains": 2,
+        "environments": 2
+    }
 
 
 @dataclass
 class SotmOptions(PerGameCommonOptions):
-    enable_rook_city: EnableRookCity
-    enable_infernal_relics: EnableInfernalRelics
-    enable_shattered_timelines: EnableShatteredTimelines
-    enable_wrath_of_the_cosmos: EnableWrathOfTheCosmos
-    enable_vengeance: EnableVengeance
-    enable_villains_of_the_multiverse: EnableVillainsOfTheMultiverse
-    enable_oblivaeon: EnableOblivaeon
-    enable_unity: EnableUnity
-    enable_the_scholar: EnableTheScholar
-    enable_guise: EnableGuise
-    enable_stuntman: EnableStuntman
-    enable_benchmark: EnableBenchmark
-    enable_the_void_guard: EnableTheVoidGuard
-    enable_ambuscade: EnableAmbuscade
-    enable_miss_information: EnableMissInformation
-    enable_wager_master: EnableWagerMaster
-    enable_chokepoint: EnableChokepoint
-    enable_silver_gulch_1883: EnableSilverGulch1883
-    enable_the_final_wasteland: EnableTheFinalWasteland
-    enable_omnitron_iv: EnableOmnitronIV
-    enable_the_celestial_tribunal: EnableTheCelestialTribunal
-    enable_the_cauldron: EnableTheCauldron
-    enable_cauldron_promos: EnableCauldronPromos
+    enabled_sets: EnabledSets
     # Not yet implemented, current implementation is equivalent to if this is set to "enable"
     # separate_variant_items: SeparateVariantItems
     required_villains: RequiredVillains
-    villain_points_normal: VillainPointsNormal
-    villain_points_advanced: VillainPointsAdvanced
-    villain_points_challenge: VillainPointsChallenge
-    villain_points_ultimate: VillainPointsUltimate
+    villain_points: VillainPoints
     required_variants: RequiredVariants
     required_scions: RequiredScions
-    extra_scions: ExtraScions
     scions_are_relative: ScionsAreRelative
     pool_size: PoolSize
     include_in_pool: IncludeInPool
     include_variants_in_pool: IncludeVariantsInPool
     exclude_from_pool: ExcludeFromPool
-    villain_weight: VillainWeight
-    environment_weight: EnvironmentWeight
-    hero_weight: HeroWeight
-    variant_weight: VariantWeight
-    locations_per_villain_normal: LocationsPerVillainNormal
-    locations_per_villain_advanced: LocationsPerVillainAdvanced
-    locations_per_villain_challenge: LocationsPerVillainChallenge
-    locations_per_villain_ultimate: LocationsPerVillainUltimate
-    locations_per_environment: LocationsPerEnvironment
-    locations_per_variant: LocationsPerVariant
-    start_heroes: StartHeroes
-    start_villains: StartVillains
-    start_environments: StartEnvironment
+    item_weights: ItemWeights
+    filler_weights: FillerWeights
+    location_density: LocationDensity
+    starting_items: StartingItems
 
 
 sotm_option_groups = [
-    OptionGroup("Official Content", [EnableRookCity,
-                                     EnableInfernalRelics,
-                                     EnableShatteredTimelines,
-                                     EnableWrathOfTheCosmos,
-                                     EnableVengeance,
-                                     EnableVillainsOfTheMultiverse,
-                                     EnableOblivaeon,
-                                     EnableUnity,
-                                     EnableTheScholar,
-                                     EnableGuise,
-                                     EnableStuntman,
-                                     EnableBenchmark,
-                                     EnableTheVoidGuard,
-                                     EnableAmbuscade,
-                                     EnableMissInformation,
-                                     EnableWagerMaster,
-                                     EnableChokepoint,
-                                     EnableSilverGulch1883,
-                                     EnableTheFinalWasteland,
-                                     EnableOmnitronIV,
-                                     EnableTheCelestialTribunal]),
-    OptionGroup("Fan-made Content", [EnableTheCauldron, EnableCauldronPromos]),
-    OptionGroup("Goal", [RequiredVillains, VillainPointsNormal, VillainPointsAdvanced, VillainPointsChallenge,
-                         VillainPointsUltimate, RequiredVariants, RequiredScions, ExtraScions, ScionsAreRelative]),
-    OptionGroup("Item Pool", [PoolSize, IncludeInPool, IncludeVariantsInPool, ExcludeFromPool,
-                              VillainWeight, EnvironmentWeight, HeroWeight, VariantWeight]),
-    OptionGroup("Location Density",
-                [LocationsPerVillainNormal, LocationsPerVillainAdvanced, LocationsPerVillainChallenge,
-                 LocationsPerVillainUltimate, LocationsPerEnvironment, LocationsPerVariant]),
-    OptionGroup("Starting items", [StartHeroes, StartVillains, StartEnvironment])
+    OptionGroup("Item Pool", [EnabledSets, PoolSize, IncludeInPool, IncludeVariantsInPool, ExcludeFromPool,
+                              ItemWeights, FillerWeights]),
+    OptionGroup("Goal", [RequiredVillains, VillainPoints, RequiredVariants, RequiredScions, ScionsAreRelative]),
+    OptionGroup("Misc", [LocationDensity, StartingItems]),
 ]

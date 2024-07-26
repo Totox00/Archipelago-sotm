@@ -2,7 +2,7 @@ from typing import Optional, Callable
 
 from BaseClasses import Location, CollectionState
 
-from .Data import data, SotmCategory, difficulties, SotmState, team_villain_count, has_fanmade
+from .Data import data, SotmCategory, difficulties, SotmState, team_villain_count
 
 
 class SotmLocation(Location):
