@@ -19,6 +19,8 @@ class SotmItem(Item):
             classification = ItemClassification.progression_skip_balancing
             if category == SotmCategory.Filler:
                 classification = ItemClassification.filler
+            elif category == SotmCategory.Trap:
+                classification = ItemClassification.trap
         super().__init__(name, classification, code, player)
         self.category = category
 
