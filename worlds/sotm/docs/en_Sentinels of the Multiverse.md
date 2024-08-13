@@ -19,6 +19,8 @@ Each variant unlock is also a location. (except for Completionist Guise)
 
 There are options to change the number of locations in each of those groups, from 0 to 5.
 
+It is recommended to play IRL or on Tabletop Simulator since some filler items will not be replicable using the digital edition.
+
 If playing on digital, make sure to adjust the settings for what content you own,
 and make sure you have all variants unlocked.
 Variant unlocking needs to be tracked manually, it is recommended to refer to [The variant list](https://sentinelsdigital.com/variants).
@@ -35,4 +37,4 @@ Sentinels of Earth-Prime content is not currently supported.
 ## What Sentinels of the Multiverse items can appear in other players' worlds?
 
 Each hero, villain, environment, and variant is an item, as well as Scions of Oblivaeon if those are required for goal.
-Filler items are Undos.
+There exists a variety of filler items, which are explained in the client.

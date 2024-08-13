@@ -2,8 +2,8 @@
 
 ## Required Software
 
-- Access to a way to play Sentinels of the Multiverse, such as physical cardboard and ink, the digital edition on Steam, or through Tabletop Simulator
-- [Sentinels of the Multiverse CLI Client](https://github.com/Totox00/ap-sotm-client) or [Sentinels of the Multiverse Browser Client (Requires no installation)](https://totox00.github.io/ap-sotm-client/index.html)
+- Access to a way to play Sentinels of the Multiverse, such as physical cardboard and ink, the digital edition on Steam (not recommended), or through Tabletop Simulator
+- [Sentinels of the Multiverse Browser Client (Requires no installation)](https://totox00.github.io/ap-sotm-client/index.html)
 
 ## General Concept
 
@@ -13,32 +13,19 @@ and what locations are possible, and allow you to send those locations when you 
 
 ## Installing the Archipelago mod
 
-Clone the repository linked above and follow the installation instructions.
-Precompiled binaries are not currently available.
+The only client that currently supports all features is the browser based client linked above, which requires no installation.
+Clients that interact with the game directly may be added in the future.
 
 ## Joining a MultiWorld Game
 
-Once you have a compiled version of the client, simply launch it in a terminal and input the server address, server port, slot name, and password if applicable.
-These values can also be provided using the -s, -p, -S, and -P flags respectively like `-p {port}`,
-or set to the defaults by using those flags by not providing a value like `-P`
-The defaults are:
-
-| value          | flag | default        |
-|----------------|------|----------------|
-| server address | -s   | archipelago.gg |
-| server port    | -p   | 38281          |
-| slot name      | -S   | Player         | 
-| password       | P    | (No password)  |
-
-Once connected, you can move the cursor using arrow keys, send a location using Enter,
-filter items and locations by typing, clear the filter using Ctrl+C, and disconnect using Ctrl+D.
-
-Tab can also be used to toggle multi-sending, which makes it so sending an Ultimate location for
-a villain also sends the easier difficulties, and Advanced and Challenge also send the Normal location.
-
-Home can be used to return to the top left if you get lost.
+Simply visit the client site and enter the connection info and click connect.
+Once connected, you can view received villains, environments, and heroes in the left 3 columns and mark villains, environments, and variants as done in the right 3 columns.
+Hovering over an item or location will show filler items relevant to that item or location.
+Global filler items are displayed when hovering over any environment.
+Variant unlock conditions are displayed when hovering over a variant unlock location.
 
 ## Where do I get a config file?
 
-The [Player Options](/games/Sentinels%20of%20the%20Multiverse/player-options) page on the website allows you to
-configure your personal options and export them into a config file.
+~~The [Player Options](/games/Sentinels%20of%20the%20Multiverse/player-options) page on the website allows you to
+configure your personal options and export them into a config file.~~ (This will only be possible if this is merged into main)
+You can generate a template config file using the "Generate Template Options" button in the launcher once the apworld is installed.
