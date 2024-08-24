@@ -155,18 +155,18 @@ class SotmWorld(World):
                 self.include_data(d)
 
         if len(starting_names) > 0:
-            raise RuntimeError(
+            raise OptionError(
                 f"Item {starting_names[0]} is marked as a starting item but does not exist with enabled sources")
 
         for item in self.options.include_in_pool.value:
             item_data = self.find_data(item)
             if item_data is None:
-                raise RuntimeError(f"Unable to find data for item {item}")
+                raise OptionError(f"Unable to find data for item {item}")
             self.include_data(item_data)
         for variant in self.options.include_variants_in_pool.value:
             variant_data = self.find_data(variant)
             if variant_data is None:
-                raise RuntimeError(f"Unable to find data for variant {variant}")
+                raise OptionError(f"Unable to find data for variant {variant}")
             self.include_variant_unlock(variant_data)
 
         # Add items until there are enough for the required variant counts
