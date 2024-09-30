@@ -122,7 +122,7 @@ data = [SotmData(*row) for row in [
     ("Deadline", [SotmSource.WrathOfTheCosmos], SotmCategory.Villain),
     ("Infinitor", [SotmSource.WrathOfTheCosmos], SotmCategory.Villain),
     ("Heroic Infinitor", [SotmSource.WrathOfTheCosmos], SotmCategory.VillainVariant, "Infinitor",
-     lambda state, player: any_variants_of(["Infinitor", "Captain Cosmic"], state, player)),
+     lambda state, player: state.has("Infinitor") and any_variant("Captain Cosmic", state, player)),
     ("Kaargra Warfang", [SotmSource.WrathOfTheCosmos], SotmCategory.Villain),
     ("Progeny", [SotmSource.WrathOfTheCosmos], SotmCategory.Villain),
     ("Wager Master", [SotmSource.WagerMaster], SotmCategory.Villain),
