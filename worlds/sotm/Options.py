@@ -1,9 +1,10 @@
 from dataclasses import dataclass
 
-from schema import Schema, And
+from schema import Schema, And, Optional
 
-from Options import Toggle, Range, Choice, PerGameCommonOptions, ItemSet, OptionDict, OptionSet, OptionGroup
-from worlds.sotm.Data import sources
+from Options import Toggle, Range, Choice, PerGameCommonOptions, ItemSet, OptionDict, OptionSet, OptionGroup, \
+    OptionList
+from worlds.sotm.Data import sources, data, SotmCategory, filler
 
 
 class EnabledSets(OptionSet):
@@ -30,7 +31,8 @@ class RequiredVillains(Range):
     """The number of villains that must be defeated in order to goal"""
     display_name = "Required Villains"
     range_start = 0
-    range_end = 74 * 40 - 20
+    range_end = [d.category in (SotmCategory.Villain, SotmCategory.TeamVillain, SotmCategory.VillainVariant)
+                 for d in data].count(True) * 40 - 20
     default = 0
 
 
@@ -57,7 +59,7 @@ class RequiredVariants(Range):
     """The number of variants that must be defeated in order to goal"""
     display_name = "Required Variants"
     range_start = 0
-    range_end = 67
+    range_end = [d.category in (SotmCategory.Variant, SotmCategory.VillainVariant) for d in data].count(True)
     default = 0
 
 
@@ -120,12 +122,11 @@ class ItemWeights(OptionDict):
     }
 
 
-class FillerWeights(OptionDict):
+class FillerWeights(OptionList):
     """
-    Specify the weights determining the weights for different item types.
-    Unspecified types default to weight 0 and can be safely excluded, but the total weight must be >0.
-    Each entry consists of a filler type and zero or more modifiers, separated by a ;
-    Valid filler types are:
+    Specify a weighted list of filler configurations to use.
+    Each entry must contain a name and a weight.
+    The name must be one of the following:
     - StartHandsize
     - HeroHp
     - Mulligan
@@ -144,36 +145,148 @@ class FillerWeights(OptionDict):
     - HeroCannotDraw
     - HeroCannotDamage
     - Scion
-    "any" and "all" can also be used to refer to any filler other than extra Scions
-    Valid modifiers are:
-    - +: Only the helpful version of the filler (note that some modifiers do not have a helpful version)
-    - -: Only the harmful version of the filler (note that some modifiers do not have a harmful version)
-    - *: Filler only affects a specific hero or villain
-    - **: Filler only affects a specific hero variant
-    - T: Filler only affects a specific damage type
+    The weight must be >=0
+    There are also several optional entries that can be included:
+    - min: The minimum number of this filler that will be added to the pool.
+      For an exact number the weight can be set to 0
+    - max: The maximum number of this filler that will be added to the pool.
+      The total weight of all filler with no max value must be >0
+    - variant: Can be "pos", "neg", or "both". Defaults to "both".
+      Specifies if the positive or negative variant of this filler is to be used.
+      All filler types do not have both variants.
+    - specificity: Can be 0, 1, or 2. Defaults to 0.
+      Specifies if the filler affects
+      0 - all items,
+      1 - a specific hero/villain, or
+      2 - a specific hero variant
+    - typed: Can be true or false. Defaults to false.
+      Specifies if the filler affects all damage or only damage of a specific type.
+      Only does something for damage-related filler.
     """
-    display_name = "Trap Weights"
-    schema = Schema({str: And(int, lambda n: n >= 0)})
-    default = {
-        "HeroHp;*": 5,
-        "StartHandsize;+*": 4,
-        "StartHandsize;-*": 2,
-        "Mulligan;+*": 1,
-        "HeroDamageDealt;+*": 2,
-        "HeroDamageDealt;-*": 1,
-        "HeroDamageTaken;+*": 1,
-        "HeroDamageTaken;-*": 2,
-        "HeroPower;+*": 2,
-        "HeroPower;-*": 1,
-        "HeroCardDraw;+*": 3,
-        "HeroCardDraw;-*": 1,
-        "VillainHp;": 5,
-        "VillainDamageTaken;+": 2,
-        "VillainDamageTaken;-": 1,
-        "VillainDamageDealt;": 2,
-        "VillainCardPlays;-": 1,
-        "VillainStartCardPlays;-": 3,
-    }
+    display_name = "Filler Weights"
+    schema = Schema([{
+        "name": lambda n: any(n == f.name for f in filler),
+        "weight": And(int, lambda n: n >= 0),
+        Optional("min"): And(int, lambda n: n >= 0),
+        Optional("max"): And(int, lambda n: n >= 0),
+        Optional("variant"): lambda s: s in ("pos", "neg", "both"),
+        Optional("specificity"): And(int, lambda n: n in (0, 1, 2)),
+        Optional("typed"): bool,
+    }])
+    default = [
+        {
+            "name": "HeroHp",
+            "weight": 5
+        },
+        {
+            "name": "StartHandsize",
+            "weight": 4,
+            "variant": "pos",
+            "specificity": 1
+        },
+        {
+            "name": "StartHandsize",
+            "weight": 2,
+            "variant": "neg",
+            "specificity": 1,
+            "max": 3
+        },
+        {
+            "name": "Mulligan",
+            "weight": 1,
+            "variant": "pos",
+            "specificity": 1
+        },
+        {
+            "name": "HeroDamageDealt",
+            "weight": 2,
+            "variant": "pos",
+            "specificity": 1,
+            "max": 3
+        },
+        {
+            "name": "HeroDamageDealt",
+            "weight": 1,
+            "variant": "neg",
+            "specificity": 1,
+            "max": 3
+        },
+        {
+            "name": "HeroDamageTaken",
+            "weight": 1,
+            "variant": "pos",
+            "specificity": 1,
+            "max": 3
+        },
+        {
+            "name": "HeroDamageTaken",
+            "weight": 2,
+            "variant": "neg",
+            "specificity": 1,
+            "max": 3
+        },
+        {
+            "name": "HeroPower",
+            "weight": 2,
+            "variant": "pos",
+            "specificity": 1,
+            "max": 2
+        },
+        {
+            "name": "HeroPower",
+            "weight": 1,
+            "variant": "neg",
+            "specificity": 1,
+            "max": 1
+        },
+        {
+            "name": "HeroCardDraw",
+            "weight": 3,
+            "variant": "pos",
+            "specificity": 1,
+            "max": 2
+        },
+        {
+            "name": "HeroCardDraw",
+            "weight": 1,
+            "variant": "neg",
+            "specificity": 1,
+            "max": 1
+        },
+        {
+            "name": "VillainHp",
+            "weight": 5
+        },
+        {
+            "name": "VillainDamageTaken",
+            "weight": 2,
+            "variant": "pos",
+            "max": 2
+        },
+        {
+            "name": "VillainDamageTaken",
+            "weight": 1,
+            "variant": "neg",
+            "max": 2
+        },
+        {
+            "name": "VillainDamageDealt",
+            "weight": 2,
+            "max": 3
+        },
+        {
+            "name": "VillainCardPlays",
+            "weight": 1,
+            "variant": "neg",
+            "max": 1
+        },
+        {
+            "name": "VillainStartCardPlays",
+            "weight": 3,
+            "variant": "neg",
+            "max": 3
+        }
+    ]
 
 
 class LocationDensity(OptionDict):
@@ -224,6 +337,21 @@ class StartingItems(OptionDict):
     }
 
 
+class DeathLink(Choice):
+    """
+    When you die, everyone dies. Of course the reverse is true too.
+    If set to "individual", a death is sent when a hero is incapacitated
+    and a received death results in the incapacitation of the hero with the lowest hp.
+    If set to "team", a death is sent when all heroes are incapacitated
+    and a received death results in losing the current game.
+    """
+    display_name = "Death Link"
+    option_false = "false"
+    option_individual = "individual"
+    option_team = "team"
+    default = "false"
+
+
 @dataclass
 class SotmOptions(PerGameCommonOptions):
     enabled_sets: EnabledSets
@@ -242,11 +370,12 @@ class SotmOptions(PerGameCommonOptions):
     filler_weights: FillerWeights
     location_density: LocationDensity
     starting_items: StartingItems
+    death_link: DeathLink
 
 
 sotm_option_groups = [
     OptionGroup("Item Pool", [EnabledSets, PoolSize, IncludeInPool, IncludeVariantsInPool, ExcludeFromPool,
                               ItemWeights, FillerWeights]),
     OptionGroup("Goal", [RequiredVillains, VillainPoints, RequiredVariants, RequiredScions, ScionsAreRelative]),
-    OptionGroup("Misc", [LocationDensity, StartingItems]),
+    OptionGroup("Misc", [LocationDensity, StartingItems, DeathLink]),
 ]

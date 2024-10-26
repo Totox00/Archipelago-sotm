@@ -13,7 +13,7 @@ class SotmLocation(Location):
             self,
             player: int,
             name: str,
-            address: int,
+            address: Optional[int],
             category: SotmCategory,
             parent,
             req: Optional[str] = None,

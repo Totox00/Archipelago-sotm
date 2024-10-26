@@ -12,7 +12,7 @@ class SotmItem(Item):
             self,
             player: int,
             name: str,
-            code: int,
+            code: Optional[int],
             category: SotmCategory,
             classification: Optional[ItemClassification] = None):
         if classification is None:

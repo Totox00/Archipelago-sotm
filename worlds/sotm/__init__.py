@@ -5,13 +5,12 @@ from BaseClasses import MultiWorld, Region, Item, Tutorial, ItemClassification
 from Options import Toggle, OptionError
 
 from worlds.AutoWorld import World, WebWorld
-from .Filler import FillerType, damage_types, filler
 
 from .Items import SotmItem
 from .Locations import SotmLocation
 from .Options import SotmOptions, sotm_option_groups
-from .Data import SotmSource, SotmData, SotmCategory, general_access_rule, data, has_all_of, difficulties, SotmState, \
-    any_variant, sources
+from .Data import SotmSource, SotmData, SotmCategory, general_access_rule, data, difficulties, SotmState, \
+    sources, FillerType, damage_types, filler, base_to_variants
 from .Id import item_name_to_id, location_name_to_id
 
 
@@ -36,6 +35,25 @@ class LocationDensity(NamedTuple):
     villain_ultimate: int
     environment: int
     variant: int
+
+
+class FillerOption:
+    name: str
+    type: FillerType
+    is_trap: bool
+    specificity: int
+    damage_type: str
+    remaining: Optional[int] | list[int] | list[None]
+    min: Optional[int]
+
+    def __init__(self, name, type, is_trap, specificity, damage_type, remaining, min):
+        self.name = name
+        self.type = type
+        self.is_trap = is_trap
+        self.specificity = specificity
+        self.damage_type = damage_type
+        self.remaining = remaining
+        self.min = min
 
 
 class SotmWorld(World):
@@ -81,6 +99,10 @@ class SotmWorld(World):
     max_points_per_villain: int
     total_possible_villain_points_duo_offset: int
     location_density: LocationDensity
+
+    filler_options: list[FillerOption]
+    filler_weights: list[int]
+    filler_weights_pos: list[int]
 
     required_client_version = (0, 0, 1)
     item_name_to_id = item_name_to_id
@@ -209,62 +231,63 @@ class SotmWorld(World):
 
         # Add heroes and hero variants until there are enough for the start hero count
         # Make sure there are not too few due to some being variants of the same hero
-        offset = 0
         while (len(self.included_heroes) + len(self.included_variants)
-               < self.options.starting_items.value["heroes"] + offset):
+               < self.options.starting_items.value["heroes"]):
             chosen = self.random.choice(self.available_heroes)
-            if chosen.category == SotmCategory.Hero:
-                if any_variant(chosen.name, self.state, self.player):
-                    offset += 1
-            else:
-                if any_variant(chosen.base, self.state, self.player):
-                    offset += 1
-            self.include_data(chosen)
+            if not self.state.has(f"Any {chosen.name}", self.player):
+                self.include_data(chosen)
 
         # Add random items to included items until pool size is satisfied
         # Adjust for items added previously so weights reflect the full pool
-        adjust_villains = len(self.included_villains)
-        adjust_environments = len(self.included_environments)
-        adjust_heroes = len(self.included_heroes)
-        adjust_variants = len(self.included_variants)
+        # Special case for full pool to avoid rounding errors (at least I think that's the cause?)
+        if self.options.pool_size.value == 100:
+            for d in self.available():
+                self.include_data(d)
+        else:
+            adjust_villains = len(self.included_villains)
+            adjust_environments = len(self.included_environments)
+            adjust_heroes = len(self.included_heroes)
+            adjust_variants = len(self.included_variants)
 
-        weights = {t: self.options.item_weights.value[t] for t in ["villain", "environment", "hero", "variant"]}
-        while (self.total_items / self.total_pool_size) * 100 < self.options.pool_size.value:
-            roll = self.take_weighted(weights)
+            types = ["villain", "environment", "hero", "variant"]
+            weights = [self.options.item_weights.value[t] for t in types]
 
-            chosen = None
-            match roll:
-                case "villain":
-                    if adjust_villains > 0:
-                        adjust_villains -= 1
-                    elif len(self.available_villains) > 0:
-                        chosen = self.random.choice(self.available_villains)
-                case "environment":
-                    if adjust_environments > 0:
-                        adjust_environments -= 1
-                    elif len(self.available_environments) > 0:
-                        chosen = self.random.choice(self.available_environments)
-                case "hero":
-                    if adjust_heroes > 0:
-                        adjust_heroes -= 1
-                    elif len(self.available_heroes) > 0:
-                        chosen = self.random.choice(self.available_heroes)
-                case "variant":
-                    if adjust_variants > 0:
-                        adjust_variants -= 1
-                    elif len(self.available_variants) > 0:
-                        chosen = self.random.choice(self.available_variants)
+            while (self.total_items / self.total_pool_size) * 100 < self.options.pool_size.value:
+                roll = self.random.choices(types, weights)
 
-            if chosen:
-                self.include_data(chosen)
-                if chosen.category == SotmCategory.TeamVillain:
-                    self.team_villains += 1
-                    if self.team_villains == 1:
-                        adjust_villains += 2
-                    elif self.team_villains == 2:
-                        adjust_villains += 1
+                chosen = None
+                match roll:
+                    case "villain":
+                        if adjust_villains > 0:
+                            adjust_villains -= 1
+                        elif len(self.available_villains) > 0:
+                            chosen = self.random.choice(self.available_villains)
+                    case "environment":
+                        if adjust_environments > 0:
+                            adjust_environments -= 1
+                        elif len(self.available_environments) > 0:
+                            chosen = self.random.choice(self.available_environments)
+                    case "hero":
+                        if adjust_heroes > 0:
+                            adjust_heroes -= 1
+                        elif len(self.available_heroes) > 0:
+                            chosen = self.random.choice(self.available_heroes)
+                    case "variant":
+                        if adjust_variants > 0:
+                            adjust_variants -= 1
+                        elif len(self.available_variants) > 0:
+                            chosen = self.random.choice(self.available_variants)
 
-                    self.ensure_team_villains()
+                if chosen:
+                    self.include_data(chosen)
+                    if chosen.category == SotmCategory.TeamVillain:
+                        self.team_villains += 1
+                        if self.team_villains == 1:
+                            adjust_villains += 2
+                        elif self.team_villains == 2:
+                            adjust_villains += 1
+
+                        self.ensure_team_villains()
 
         # Add random items from included items to precollected until start counts are satisfied
         start_hero_bases = []
@@ -310,6 +333,8 @@ class SotmWorld(World):
             chosen = self.random.choice(choices)
             self.multiworld.push_precollected(self.create_item_from_data(chosen))
             start_environments.append(chosen.name)
+
+        self.parse_filler_weights()
 
     def available(self) -> list[SotmData]:
         return (self.available_villains + self.available_heroes + self.available_environments
@@ -375,23 +400,18 @@ class SotmWorld(World):
             self.include_data(d)
 
     def min_needed_for_variant(self, variant: SotmData) -> list[SotmData]:
-        min_needed = [d for d in self.available()]
+        maybe_deps = [d for d in self.available() if d.name not in self.state.items and d.name in variant.dependencies]
+        self.random.shuffle(maybe_deps)
         test_state = SotmState()
-        test_state.items.update([d.name for d in min_needed])
-        while True:
-            can_be_removed = []
-            for d in min_needed:
-                if d.name not in self.state.items:
-                    test_state.items.remove(d.name)
-                    if variant.rule(test_state, self.player):
-                        can_be_removed.append(d)
-                    test_state.items.add(d.name)
-            if len(can_be_removed) == 0:
-                return [d for d in min_needed if d.name not in self.state.items]
-            else:
-                removed = self.random.choice(can_be_removed)
-                min_needed.remove(removed)
-                test_state.items.remove(removed.name)
+        test_state.items.update([d.name for d in maybe_deps])
+        test_state.items.update(self.state.items)
+        required = []
+        for d in maybe_deps:
+            test_state.items.remove(d.name)
+            if not variant.rule(test_state, self.player):
+                test_state.items.add(d.name)
+                required.append(d)
+        return required
 
     def ensure_team_villains(self):
         while 0 < self.team_villains < 3:
@@ -408,6 +428,14 @@ class SotmWorld(World):
 
         menu.add_exits({"General Access", "General Access"},
                        {"General Access": lambda state: general_access_rule(state, self.player)})
+
+        for base, variants in base_to_variants.items():
+            if base in self.state.items or any(v in self.state.items for v in variants):
+                event_loc = SotmLocation(self.player, f"Any {base}", None, SotmCategory.Event, menu,
+                                         rule=lambda state, player, b=base, v=variants:
+                                         state.has(b, player) or state.has_any(v, player))
+                event_loc.place_locked_item(SotmItem(self.player, f"Any {base}", None, SotmCategory.Event))
+                menu.locations.append(event_loc)
 
         duo = 0
 
@@ -428,14 +456,14 @@ class SotmWorld(World):
                         name = f"Spite: Agent of Gloom and Skinwalker Gloomweaver - Challenge #{n}"
                         (general_access.locations
                          .append(SotmLocation(self.player, name, self.location_name_to_id[name], villain.category,
-                                              general_access, rule=lambda state, player: has_all_of(
-                                                  ["Spite: Agent of Gloom", "Skinwalker Gloomweaver"], state, player))))
+                                              general_access, rule=lambda state, player: state.has_all(
+                                              ["Spite: Agent of Gloom", "Skinwalker Gloomweaver"], player))))
                     for n in range(1, self.location_density.villain_ultimate + 1):
                         name = f"Spite: Agent of Gloom and Skinwalker Gloomweaver - Ultimate #{n}"
                         (general_access.locations
                          .append(SotmLocation(self.player, name, self.location_name_to_id[name], villain.category,
-                                              general_access, rule=lambda state, player: has_all_of(
-                                                  ["Spite: Agent of Gloom", "Skinwalker Gloomweaver"], state, player))))
+                                              general_access, rule=lambda state, player: state.has_all(
+                                              ["Spite: Agent of Gloom", "Skinwalker Gloomweaver"], player))))
             else:
                 for n in range(1, self.location_density.villain_challenge + 1):
                     name = f"{villain.name} - Challenge #{n}"
@@ -489,8 +517,39 @@ class SotmWorld(World):
             items.append(SotmItem(self.player, "Scion of Oblivaeon", self.item_name_to_id["Scion of Oblivaeon"],
                                   SotmCategory.Scion, ItemClassification.progression_skip_balancing))
 
+        for idx in range(len(self.filler_options)):
+            chosen = self.filler_options[idx]
+            if chosen.min:
+                for _ in range(chosen.min):
+                    if chosen.specificity == 0 or chosen.type == FillerType.Other:
+                        if chosen.remaining:
+                            chosen.remaining -= 1
+                            if chosen.remaining == 0:
+                                self.filler_weights[idx] = 0
+                                self.filler_weights_pos[idx] = 0
+                        name = chosen.name.replace("[TYPE]", chosen.damage_type)
+                        items.append(SotmItem(self.player, name, self.item_name_to_id[name],
+                                              SotmCategory.Trap if chosen.is_trap else SotmCategory.Filler))
+                    else:
+                        for selected in range(len(chosen.remaining)):
+                            if any(chosen.remaining):
+                                chosen.remaining[selected] -= 1
+                                if sum(chosen.remaining) == 0:
+                                    self.filler_weights[idx] = 0
+                                    self.filler_weights_pos[idx] = 0
+                            if chosen.type == FillerType.Hero:
+                                if chosen.specificity == 1:
+                                    specifier = f"Any {self.included_heroes[selected].name}"
+                                else:
+                                    specifier = f"{self.included_variants[selected].name}"
+                            else:
+                                specifier = f"{self.included_villains[selected].name}"
+                            name = f"{chosen.name.replace('[TYPE]', chosen.damage_type)} ({specifier})"
+                            items.append(SotmItem(self.player, name, self.item_name_to_id[name],
+                                                  SotmCategory.Trap if chosen.is_trap else SotmCategory.Filler))
+
         for _ in range(0, self.total_locations - len(items)):
-            name, is_trap = self.resolve_filler(self.options.filler_weights.value)
+            name, is_trap = self.resolve_filler()
             items.append(SotmItem(self.player, name, self.item_name_to_id[name],
                                   SotmCategory.Trap if is_trap else SotmCategory.Filler))
 
@@ -514,73 +573,97 @@ class SotmWorld(World):
         return next((d for d in self.available() if d.name == name), None)
 
     def get_filler_item_name(self) -> str:
-        name, is_trap = self.resolve_filler(self.options.filler_weights.value, True)
+        name, is_trap = self.resolve_filler(True)
         return name
 
-    def resolve_filler(self, weightings: dict[str, int], force_pos: bool = False) -> (str, bool):
-        [chosen_name, mods] = self.take_weighted(weightings).split(";")
-        if force_pos:
-            is_pos = True
-        elif "+" in mods and "-" in mods:
-            is_pos = None
-        elif "+" in mods:
-            is_pos = True
-        elif "-" in mods:
-            is_pos = False
-        else:
-            is_pos = None
-        if "**" in mods:
-            specificity = 2
-        elif "*" in mods:
-            specificity = 1
-        else:
-            specificity = 0
-        if "T" in mods or "t" in mods:
-            damage_type = True
-        else:
-            damage_type = False
-        if chosen_name == "any" or chosen_name == "all":
-            can_reselect = True
-            chosen = filler[self.random.randint(0, len(filler) - 2)]
-        else:
-            chosen = next((d for d in filler if d.name == chosen_name), None)
-            if chosen is None:
-                raise OptionError(f"Filler {chosen_name} does not exist")
-            can_reselect = force_pos
-        if not can_reselect and ((chosen.name_pos is None and is_pos) or (chosen.name_neg is None and not is_pos)):
-            raise OptionError(f"Filler {chosen_name} does not have the version specified")
-        while (chosen.name_pos is None and is_pos) or (chosen.name_neg is None and not is_pos):
-            chosen = filler[self.random.randint(0, len(filler) - 2)]
-        if is_pos is None:
-            is_pos = bool(self.random.getrandbits(1))
-        if damage_type:
-            damage_type = self.random.choice(damage_types)
-        else:
-            damage_type = ""
-        if specificity == 0 or chosen.type == FillerType.Other:
-            if is_pos:
-                return chosen.name_pos.replace("[TYPE]", damage_type), False
+    def parse_filler_weights(self):
+        self.filler_options = []
+        self.filler_weights = []
+        self.filler_weights_pos = []
+        for current_filler in self.options.filler_weights.value:
+            f_type = next((f for f in filler if f.name == current_filler.get("name")), None)
+            if not f_type:
+                raise OptionError(f"Filler {current_filler.name} does not exist")
+            if current_filler.get("variant") == "pos":
+                variant = 2
+            elif current_filler.get("variant") == "neg":
+                variant = 1
             else:
-                return chosen.name_neg.replace("[TYPE]", damage_type), True
-        else:
-            if chosen.type == FillerType.Hero:
-                if specificity == 1:
-                    specifier = f"Any {self.random.choice(self.included_heroes).name}"
-                else:
-                    specifier = f"{self.random.choice(self.included_variants).name}"
+                variant = 3
+            specificity = current_filler.get("specificity", 0)
+            typed = current_filler.get("typed", False)
+            max = current_filler.get("max", None)
+            min = current_filler.get("min", None)
+            match f_type.type:
+                case FillerType.Hero:
+                    length = len(self.included_heroes) if specificity == 1 else len(self.included_variants)
+                case FillerType.Villain:
+                    length = len(self.included_villains)
+                case _:
+                    length = 1
+            weight = current_filler.get("weight")
+            if typed:
+                for damage_type in damage_types:
+                    if (variant & 1) > 0:
+                        if not f_type.name_neg:
+                            raise OptionError(f"Filler {f_type.name} does not have a negative version")
+                        self.filler_options.append(FillerOption(f_type.name_neg, f_type.type, True,
+                                                                specificity, damage_type, [max] * length, min))
+                        self.filler_weights.append(weight)
+                        self.filler_weights_pos.append(0)
+                    if (variant & 2) > 0:
+                        if not f_type.name_pos:
+                            raise OptionError(f"Filler {f_type.name} does not have a positive version")
+                        self.filler_options.append(FillerOption(f_type.name_pos, f_type.type, False,
+                                                                specificity, damage_type, [max] * length, min))
+                        self.filler_weights.append(weight)
+                        self.filler_weights_pos.append(weight)
             else:
-                specifier = f"{self.random.choice(self.included_villains).name}"
-        if is_pos:
-            return f"{chosen.name_pos.replace('[TYPE]', damage_type)} ({specifier})", False
-        else:
-            return f"{chosen.name_neg.replace('[TYPE]', damage_type)} ({specifier})", True
+                if (variant & 1) > 0:
+                    if not f_type.name_neg:
+                        raise OptionError(f"Filler {f_type.name} does not have a negative version")
+                    self.filler_options.append(FillerOption(f_type.name_neg, f_type.type, True,
+                                                            specificity, "",
+                                                            [max] * length if specificity > 0 else max, min))
+                    self.filler_weights.append(weight)
+                    self.filler_weights_pos.append(0)
+                if (variant & 2) > 0:
+                    if not f_type.name_pos:
+                        raise OptionError(f"Filler {f_type.name} does not have a positive version")
+                    self.filler_options.append(FillerOption(f_type.name_pos, f_type.type, False,
+                                                            specificity, "",
+                                                            [max] * length if specificity > 0 else max, min))
+                    self.filler_weights.append(weight)
+                    self.filler_weights_pos.append(weight)
 
-    def take_weighted(self, weightings: dict[str, int]) -> str:
-        chosen = self.random.randint(0, sum(weightings.values()) - 1)
-        for k, v in weightings.items():
-            if chosen < v:
-                return k
-            chosen -= v
+    def resolve_filler(self, force_pos: bool = False) -> (str, bool):
+        [idx] = self.random.choices(range(len(self.filler_options)),
+                                    self.filler_weights_pos if force_pos else self.filler_weights)
+        chosen = self.filler_options[idx]
+        if chosen.specificity == 0 or chosen.type == FillerType.Other:
+            if chosen.remaining:
+                chosen.remaining -= 1
+                if chosen.remaining == 0:
+                    self.filler_weights[idx] = 0
+                    self.filler_weights_pos[idx] = 0
+            return chosen.name.replace("[TYPE]", chosen.damage_type), chosen.is_trap
+        else:
+            if any(chosen.remaining):
+                [selected] = self.random.choices(range(len(chosen.remaining)), chosen.remaining)
+                chosen.remaining[selected] -= 1
+                if sum(chosen.remaining) == 0:
+                    self.filler_weights[idx] = 0
+                    self.filler_weights_pos[idx] = 0
+            else:
+                selected = self.random.randint(0, len(chosen.remaining) - 1)
+            if chosen.type == FillerType.Hero:
+                if chosen.specificity == 1:
+                    specifier = f"Any {self.included_heroes[selected].name}"
+                else:
+                    specifier = f"{self.included_variants[selected].name}"
+            else:
+                specifier = f"{self.included_villains[selected].name}"
+        return f"{chosen.name.replace('[TYPE]', chosen.damage_type)} ({specifier})", chosen.is_trap
 
     def set_rules(self) -> None:
         self.multiworld.completion_condition[self.player] = lambda state: (self.villain_goal(state)
@@ -629,5 +712,6 @@ class SotmWorld(World):
                 self.location_density.villain_ultimate,
                 self.location_density.environment,
                 self.location_density.variant
-            ]
+            ],
+            "death_link": {"false": 0, "individual": 1, "team": 2}[self.options.death_link.value]
         }
