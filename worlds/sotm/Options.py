@@ -56,7 +56,7 @@ class VillainPoints(OptionDict):
 
 
 class RequiredVariants(Range):
-    """The number of variants that must be defeated in order to goal"""
+    """The number of variant unlock conditions that must be fulfilled in order to goal"""
     display_name = "Required Variants"
     range_start = 0
     range_end = [d.category in (SotmCategory.Variant, SotmCategory.VillainVariant) for d in data].count(True)
