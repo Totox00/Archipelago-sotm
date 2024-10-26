@@ -588,8 +588,10 @@ class SotmWorld(World):
                 variant = 2
             elif current_filler.get("variant") == "neg":
                 variant = 1
-            else:
+            elif current_filler.get("variant") == "both":
                 variant = 3
+            else:
+                variant = (2 if f_type.name_pos else 0) | (1 if f_type.name_neg else 0)
             specificity = current_filler.get("specificity", 0)
             typed = current_filler.get("typed", False)
             max = current_filler.get("max", None)
