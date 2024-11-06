@@ -10,10 +10,15 @@ from worlds.sotm.Data import sources, data, SotmCategory, filler
 class EnabledSets(OptionSet):
     """
     Specify all sets that content can be used for. Content from the base game is always included.
+    The Following sources are supported:
+
     """
     display_name = "Enabled Sets"
     default = frozenset(source["name"] for source in sources.values() if source["default"])
     valid_keys = [source["name"] for source in sources.values()]
+
+
+EnabledSets.__doc__ = EnabledSets.__doc__[0:-4] + "\n".join(f"# - {source['name']}" for source in sources.values())
 
 
 class SeparateVariantItems(Choice):

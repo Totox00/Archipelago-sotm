@@ -355,17 +355,12 @@ class SotmWorld(World):
                 self.available_villains.remove(d)
                 self.included_villains.append(d)
                 self.total_items += 1
-                self.total_locations += (self.location_density.villain_normal
-                                         + self.location_density.villain_advanced
-                                         + self.location_density.villain_challenge
-                                         + self.location_density.villain_ultimate)
             case SotmCategory.Environment:
                 if d not in self.available_environments:
                     return False
                 self.available_environments.remove(d)
                 self.included_environments.append(d)
                 self.total_items += 1
-                self.total_locations += self.location_density.environment
             case SotmCategory.Hero:
                 if d not in self.available_heroes:
                     return False
@@ -381,15 +376,10 @@ class SotmWorld(World):
 
         self.state.items.add(d.name)
 
-        if ((d.name == "Spite: Agent of Gloom" and "Gloomweaver Skinwalker" not in self.state.items)
-                or (d.name == "Gloomweaver Skinwalker" and "Spite: Agent of Gloom" not in self.state.items)):
-            self.total_locations -= (self.location_density.villain_challenge + self.location_density.villain_ultimate)
-
         for v in self.available_variant_unlocks:
             if v.rule(self.state, self.player):
                 self.possible_variants.append(v)
                 self.available_variant_unlocks.remove(v)
-                self.total_locations += self.location_density.variant
 
         return True
 
@@ -448,6 +438,7 @@ class SotmWorld(World):
                 name = f"{villain.name} - Advanced #{n}"
                 general_access.locations.append(SotmLocation(self.player, name, self.location_name_to_id[name],
                                                 villain.category, general_access, villain.name))
+            self.total_locations += self.location_density.villain_normal + self.location_density.villain_advanced
 
             if villain.name == "Spite: Agent of Gloom" or villain.name == "Skinwalker Gloomweaver":
                 duo += 1
@@ -464,7 +455,10 @@ class SotmWorld(World):
                          .append(SotmLocation(self.player, name, self.location_name_to_id[name], villain.category,
                                               general_access, rule=lambda state, player: state.has_all(
                                               ["Spite: Agent of Gloom", "Skinwalker Gloomweaver"], player))))
-            else:
+                    self.total_locations += (self.location_density.villain_challenge
+                                             + self.location_density.villain_ultimate)
+
+            elif not villain.no_challenge:
                 for n in range(1, self.location_density.villain_challenge + 1):
                     name = f"{villain.name} - Challenge #{n}"
                     general_access.locations.append(SotmLocation(self.player, name, self.location_name_to_id[name],
@@ -473,18 +467,19 @@ class SotmWorld(World):
                     name = f"{villain.name} - Ultimate #{n}"
                     general_access.locations.append(SotmLocation(self.player, name, self.location_name_to_id[name],
                                                     villain.category, general_access, villain.name))
-
+                self.total_locations += self.location_density.villain_challenge + self.location_density.villain_ultimate
         for environment in self.included_environments:
             for n in range(1, self.location_density.environment + 1):
                 name = f"{environment.name} - Any Difficulty #{n}"
                 general_access.locations.append(SotmLocation(self.player, name, self.location_name_to_id[name],
                                                 environment.category, general_access, environment.name))
-
+            self.total_locations += self.location_density.environment
         for variant in self.possible_variants:
             for n in range(1, self.location_density.variant + 1):
                 name = f"{variant.name} - Unlock #{n}"
                 general_access.locations.append(SotmLocation(self.player, name, self.location_name_to_id[name],
                                                 variant.category, general_access, rule=variant.rule))
+            self.total_locations += self.location_density.variant
 
     def create_items(self):
         exclude = [item.name for item in self.multiworld.precollected_items[self.player]]
@@ -693,6 +688,7 @@ class SotmWorld(World):
     def scion_goal(self, state) -> bool:
         if self.required_scions == 0:
             return True
+
         return (state.has("Scion of Oblivaeon", self.player, self.required_scions)
                 and [state.has(v.name, self.player) for v in self.included_environments].count(True) >= 5)
 
