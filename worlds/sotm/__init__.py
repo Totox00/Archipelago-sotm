@@ -75,6 +75,7 @@ class SotmWorld(World):
 
     available_villains: list[SotmData]
     available_heroes: list[SotmData]
+    available_contenders: list[SotmData]
     available_environments: list[SotmData]
     available_variants: list[SotmData]
     available_variant_unlocks: list[SotmData]
@@ -82,6 +83,7 @@ class SotmWorld(World):
     state: SotmState
     included_villains: list[SotmData]
     included_heroes: list[SotmData]
+    included_contenders: list[SotmData]
     included_environments: list[SotmData]
     included_variants: list[SotmData]
     possible_variants: list[SotmData]
@@ -118,6 +120,7 @@ class SotmWorld(World):
         self.enabled_sources = set()
         self.included_villains = []
         self.included_heroes = []
+        self.included_contenders = []
         self.included_environments = []
         self.included_variants = []
         self.possible_variants = []
@@ -143,6 +146,7 @@ class SotmWorld(World):
         self.available_villains = [d for d in available if d.category in
                                    (SotmCategory.Villain, SotmCategory.VillainVariant, SotmCategory.TeamVillain)]
         self.available_heroes = [d for d in available if d.category == SotmCategory.Hero]
+        self.available_contenders = [d for d in available if d.category == SotmCategory.Contender]
         self.available_environments = [d for d in available if d.category == SotmCategory.Environment]
         self.available_variants = [d for d in available if d.category in
                                    (SotmCategory.Variant, SotmCategory.VillainVariant)]
@@ -237,6 +241,11 @@ class SotmWorld(World):
             if not self.state.has(f"Any {chosen.name}", self.player):
                 self.include_data(chosen)
 
+        # Add contenders until there are enough for the start contender count
+        while len(self.included_contenders) < self.options.starting_items.value["contenders"]:
+            chosen = self.random.choice(self.available_contenders)
+            self.include_data(chosen)
+
         # Add random items to included items until pool size is satisfied
         # Adjust for items added previously so weights reflect the full pool
         # Special case for full pool to avoid rounding errors (at least I think that's the cause?)
@@ -248,8 +257,9 @@ class SotmWorld(World):
             adjust_environments = len(self.included_environments)
             adjust_heroes = len(self.included_heroes)
             adjust_variants = len(self.included_variants)
+            adjust_contenders = len(self.included_contenders)
 
-            types = ["villain", "environment", "hero", "variant"]
+            types = ["villain", "environment", "hero", "variant", "contender"]
             weights = [self.options.item_weights.value[t] for t in types]
 
             while (self.total_items / self.total_pool_size) * 100 < self.options.pool_size.value:
@@ -277,6 +287,11 @@ class SotmWorld(World):
                             adjust_variants -= 1
                         elif len(self.available_variants) > 0:
                             chosen = self.random.choice(self.available_variants)
+                    case "contender":
+                        if adjust_contenders > 0:
+                            adjust_contenders -= 1
+                        elif len(self.available_contenders) > 0:
+                            chosen = self.random.choice(self.available_contenders)
 
                 if chosen:
                     self.include_data(chosen)
@@ -294,6 +309,7 @@ class SotmWorld(World):
         start_hero_count = 0
         start_villains = []
         start_environments = []
+        start_contenders = []
         for name in self.options.start_inventory.value:
             d = next((d for d in data if d.name == name), None)
             if d is not None:
@@ -310,6 +326,8 @@ class SotmWorld(World):
                         start_villains.append(d.name)
                     case SotmCategory.Environment:
                         start_environments.append(d.name)
+                    case SotmCategory.Contender:
+                        start_contenders.append(d.name)
 
         for _ in range(start_hero_count, self.options.starting_items.value["heroes"]):
             choices = ([d for d in self.included_heroes if d.name not in start_hero_bases]
@@ -334,14 +352,23 @@ class SotmWorld(World):
             self.multiworld.push_precollected(self.create_item_from_data(chosen))
             start_environments.append(chosen.name)
 
+        for _ in range(len(start_contenders), self.options.starting_items.value["contenders"]):
+            choices = [d for d in self.included_contenders if d.name not in start_contenders]
+            chosen = self.random.choice(choices)
+            self.multiworld.push_precollected((self.create_item_from_data(chosen)))
+            start_contenders.append(chosen.name)
+
         self.parse_filler_weights()
 
     def available(self) -> list[SotmData]:
-        return (self.available_villains + self.available_heroes + self.available_environments
+        return (self.available_villains
+                + self.available_heroes
+                + self.available_contenders
+                + self.available_environments
                 + [d for d in self.available_variants if d.category != SotmCategory.VillainVariant])
 
     def included(self) -> list[SotmData]:
-        return (self.included_villains + self.included_heroes + self.included_environments
+        return (self.included_villains + self.included_heroes + self.included_contenders + self.included_environments
                 + [d for d in self.included_variants if d.category != SotmCategory.VillainVariant])
 
     def include_data(self, d: SotmData) -> bool:
@@ -372,6 +399,12 @@ class SotmWorld(World):
                     return False
                 self.available_variants.remove(d)
                 self.included_variants.append(d)
+                self.total_items += 1
+            case SotmCategory.Contender:
+                if d not in self.available_contenders:
+                    return False
+                self.available_contenders.remove(d)
+                self.included_contenders.append(d)
                 self.total_items += 1
 
         self.state.items.add(d.name)
@@ -501,6 +534,10 @@ class SotmWorld(World):
             if variant.name not in exclude:
                 if variant.category == SotmCategory.Variant:
                     items.append(self.create_item_from_data(variant))
+
+        for contender in self.included_contenders:
+            if contender.name not in exclude:
+                items.append(self.create_item_from_data(contender))
 
         if self.options.scions_are_relative.value == Toggle.option_true:
             self.required_scions = math.floor((self.total_locations - len(items))

@@ -117,13 +117,14 @@ class ItemWeights(OptionDict):
     display_name = "Item Weights"
     schema = Schema({
         item: And(int, lambda n: n >= 0)
-        for item in ["villain", "environment", "hero", "variant"]
+        for item in ["villain", "environment", "hero", "variant", "contender"]
     })
     default = {
         "villain": 10,
         "environment": 20,
         "hero": 30,
-        "variant": 60
+        "variant": 60,
+        "contender": 0
     }
 
 
@@ -334,11 +335,13 @@ class StartingItems(OptionDict):
         "heroes": And(int, lambda n: n >= 0),
         "villains": And(int, lambda n: n >= 0),
         "environments": And(int, lambda n: n >= 0),
+        "contenders": And(int, lambda n: n >= 0),
     })
     default = {
         "heroes": 5,
         "villains": 2,
-        "environments": 2
+        "environments": 2,
+        "contenders": 0
     }
 
 
