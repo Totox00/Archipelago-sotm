@@ -28,9 +28,11 @@ class SotmItem(Item):
     def get_item_name_groups() -> dict:
         return {
             "Heroes": {d.name for d in data if d.category == SotmCategory.Hero},
+            "Contenders": {d.name for d in data if d.category == SotmCategory.Contender},
             "Environments": {d.name for d in data if d.category == SotmCategory.Environment},
             "Villains": {d.name for d in data if d.category == SotmCategory.Villain
                          or d.category == SotmCategory.VillainVariant},
             "Team Villains": {d.name for d in data if d.category == SotmCategory.TeamVillain},
+            "Gladiators": {d.name for d in data if d.category == SotmCategory.Gladiator},
             "Variants": {d.name for d in data if d.category == SotmCategory.Variant},
         }

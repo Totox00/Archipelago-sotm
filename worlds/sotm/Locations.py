@@ -2,7 +2,7 @@ from typing import Optional, Callable
 
 from BaseClasses import Location, CollectionState
 
-from .Data import data, SotmCategory, difficulties, SotmState, team_villain_count
+from .Data import data, SotmCategory, difficulties, SotmState, team_villain_count, gladiator_count
 
 
 class SotmLocation(Location):
@@ -24,6 +24,8 @@ class SotmLocation(Location):
             self.access_rule = lambda state: rule(state, player)
         elif category == SotmCategory.TeamVillain:
             self.access_rule = lambda state: state.has(req, player) and team_villain_count(state, player)
+        elif category == SotmCategory.Gladiator:
+            self.access_rule = lambda state: state.has(req, player) and gladiator_count(state, player)
         else:
             self.access_rule = lambda state: state.has(req, player)
 
@@ -39,6 +41,7 @@ class SotmLocation(Location):
         villain_names = [d.name for d in data if
                          d.category == SotmCategory.Villain or d.category == SotmCategory.VillainVariant]
         team_villain_names = [d.name for d in data if d.category == SotmCategory.TeamVillain]
+        gladiator_names = [d.name for d in data if d.category == SotmCategory.Gladiator]
 
         for n in range(1, 6):
             for difficulty in ["Normal", "Advanced"]:
@@ -54,5 +57,7 @@ class SotmLocation(Location):
             for difficulty in difficulties:
                 location_name_groups.update({f"Team Villains - {difficulty} #{n}": {
                     f"{name} - {difficulty} #{n}" for name in team_villain_names}})
+                location_name_groups.update({f"Gladiators - {difficulty} #{n}": {
+                    f"{name} - {difficulty} #{n}" for name in gladiator_names}})
 
         return location_name_groups
