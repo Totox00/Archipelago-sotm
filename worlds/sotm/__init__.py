@@ -1,4 +1,5 @@
 import math
+from itertools import chain
 from typing import Dict, Set, Optional, NamedTuple
 
 from BaseClasses import MultiWorld, Region, Item, Tutorial, ItemClassification
@@ -35,6 +36,21 @@ class LocationDensity(NamedTuple):
     villain_ultimate: int
     environment: int
     variant: int
+
+
+class VillainPoints(NamedTuple):
+    normal: int
+    advanced: int
+    challenge: int
+    ultimate: int
+
+
+class StartingItems(NamedTuple):
+    heroes: int
+    villains: int
+    environments: int
+    contenders: int
+    gladiators: int
 
 
 class FillerOption:
@@ -90,6 +106,13 @@ class SotmWorld(World):
     included_variants: list[SotmData]
     possible_variants: list[SotmData]
 
+    start_heroes: list[str]
+    start_villains: list[str]
+    start_environments: list[str]
+    start_contenders: list[str]
+    start_gladiators: list[str]
+    all_dependencies: set[str]
+
     total_pool_size: int
     total_locations: int
     total_items: int
@@ -103,6 +126,8 @@ class SotmWorld(World):
     max_points_per_villain: int
     total_possible_villain_points_duo_offset: int
     location_density: LocationDensity
+    villain_points: VillainPoints
+    starting_items: StartingItems
 
     filler_options: list[FillerOption]
     filler_weights: list[int]
@@ -127,6 +152,7 @@ class SotmWorld(World):
         self.included_environments = []
         self.included_variants = []
         self.possible_variants = []
+        self.all_dependencies = set()
 
     def generate_early(self):
         for source, source_data in sources.items():
@@ -140,6 +166,21 @@ class SotmWorld(World):
             self.options.location_density.value["villain"]["ultimate"],
             self.options.location_density.value["environment"],
             self.options.location_density.value["variant"]
+        )
+
+        self.villain_points = VillainPoints(
+            self.options.villain_points.value["normal"],
+            self.options.villain_points.value["advanced"],
+            self.options.villain_points.value["challenge"],
+            self.options.villain_points.value["ultimate"]
+        )
+
+        self.starting_items = StartingItems(
+            self.options.starting_items["heroes"],
+            self.options.starting_items["villains"],
+            self.options.starting_items["environments"],
+            self.options.starting_items["contenders"],
+            self.options.starting_items["gladiators"]
         )
 
         available = [d for d in data if (d.name not in self.options.exclude_from_pool.value)
@@ -159,23 +200,20 @@ class SotmWorld(World):
                                           if d.rule is not None and d.rule(full_state, self.player)]
         self.total_pool_size = len(available)
 
-        self.max_points_per_villain = (
-            self.options.villain_points.value["normal"]
-            + self.options.villain_points.value["advanced"]
-            + self.options.villain_points.value["challenge"]
-            + self.options.villain_points.value["ultimate"]
-        )
+        self.max_points_per_villain = (self.villain_points.normal + self.villain_points.advanced
+                                       + self.villain_points.challenge + self.villain_points.ultimate)
         self.total_possible_villain_points = len(self.available_villains) * self.max_points_per_villain
-
-        self.total_possible_villain_points_duo_offset = (self.options.villain_points.value["challenge"]
-                                                         + self.options.villain_points.value["ultimate"])
-
+        self.total_possible_villain_points_duo_offset = self.villain_points.challenge + self.villain_points.ultimate
         if True in (v.name in ("Spite: Agent of Gloom", "Skinwalker Gloomweaver") for v in self.available_villains):
-            self.total_possible_villain_points -= (self.options.villain_points.value["challenge"]
-                                                   + self.options.villain_points.value["ultimate"])
+            self.total_possible_villain_points -= self.villain_points.challenge + self.villain_points.ultimate
 
         self.required_villains = min(self.options.required_villains.value, self.total_possible_villain_points)
         self.required_variants = min(self.options.required_variants.value, len(self.available_variant_unlocks))
+
+        # We can take a shortcut if pool size is maximum
+        if self.options.pool_size.value == 100:
+            for d in self.available():
+                self.include_data(d)
 
         # Add starting items to pool
         starting_names = [item for item in self.options.start_inventory.value]
@@ -216,7 +254,7 @@ class SotmWorld(World):
                 + (self.total_possible_villain_points_duo_offset
                    if [d.name in ("Spite: Agent of Gloom", "Skinwalker Gloomweaver")
                        for d in self.included_villains].count(True) == 2 else 0),
-                self.options.starting_items.value["villains"]):
+                self.starting_items.villains):
             self.include_data(chosen := self.random.choice(self.available_villains))
             if chosen.category == SotmCategory.TeamVillain:
                 self.team_villains += 1
@@ -224,122 +262,82 @@ class SotmWorld(World):
 
         # Starting villains cannot be team villains
         while (len([d for d in self.included_villains if d.category != SotmCategory.TeamVillain])
-               < self.options.starting_items.value["villains"]):
+               < self.starting_items.villains):
             available_villains = [d for d in self.available_villains if d.category != SotmCategory.TeamVillain]
             self.include_data(self.random.choice(available_villains))
 
-        # Add environments until there are enough for the starting environment count
-        while len(self.included_environments) < self.options.starting_items.value["environments"]:
-            self.include_data(self.random.choice(self.available_environments))
+        # Add heroes and hero variants until there are enough for the start hero count
+        # Make sure there are not too few due to some being variants of the same hero
+        while len(self.included_heroes) + len(self.included_variants) < self.starting_items.heroes:
+            chosen = self.random.choice(self.available_heroes)
+            if not self.state.has(f"Any {chosen.name}", self.player):
+                self.include_data(chosen)
+
+        # Add contenders, gladiators, and environments until there are enough for the starting counts
+        for (included, starting, available) in (
+            (self.included_contenders, self.starting_items.contenders, self.available_contenders),
+            (self.included_gladiators, self.starting_items.gladiators, self.available_gladiators),
+            (self.included_environments, self.starting_items.environments, self.available_environments),
+        ):
+            while len(included) < starting:
+                self.include_data(self.random.choice(available))
 
         # Oblivaeon requires 5 environments if part of goal
         if self.options.required_scions.value > 0:
             while len(self.included_environments) < 5:
                 self.include_data(self.random.choice(self.available_environments))
 
-        # Add heroes and hero variants until there are enough for the start hero count
-        # Make sure there are not too few due to some being variants of the same hero
-        while (len(self.included_heroes) + len(self.included_variants)
-               < self.options.starting_items.value["heroes"]):
-            chosen = self.random.choice(self.available_heroes)
-            if not self.state.has(f"Any {chosen.name}", self.player):
-                self.include_data(chosen)
-
-        # Add contenders until there are enough for the start contender count
-        while len(self.included_contenders) < self.options.starting_items.value["contenders"]:
-            chosen = self.random.choice(self.available_contenders)
-            self.include_data(chosen)
-
-        # Add gladiators until there are enough for the start gladiator count
-        while len(self.included_gladiators) < self.options.starting_items.value["gladiators"]:
-            chosen = self.random.choice(self.available_gladiators)
-            self.include_data(chosen)
-
         # Add random items to included items until pool size is satisfied
         # Adjust for items added previously so weights reflect the full pool
-        # Special case for full pool to avoid rounding errors (at least I think that's the cause?)
-        if self.options.pool_size.value == 100:
-            for d in self.available():
-                self.include_data(d)
-        else:
-            adjust_villains = len(self.included_villains)
-            adjust_environments = len(self.included_environments)
-            adjust_heroes = len(self.included_heroes)
-            adjust_variants = len(self.included_variants)
-            adjust_contenders = len(self.included_contenders)
-            adjust_gladiators = len(self.included_gladiators)
+        adjust = [len(included) for included in (self.included_villains, self.included_environments,
+                                                 self.included_heroes, self.included_variants,
+                                                 self.included_contenders, self.included_gladiators)]
+        available = [self.available_villains, self.available_environments, self.available_heroes,
+                     self.available_variants, self.available_contenders, self.available_gladiators]
+        weights = [self.options.item_weights.value[t] for t in ("villain", "environment", "hero",
+                                                                "variant", "contender", "gladiator")]
 
-            types = ["villain", "environment", "hero", "variant", "contender", "gladiator"]
-            weights = [self.options.item_weights.value[t] for t in types]
+        while (self.total_items / self.total_pool_size) * 100 < self.options.pool_size.value:
+            [chosen_type] = self.random.choices(range(6), weights)
+            chosen = None
+            if adjust[chosen_type] > 0:
+                adjust[chosen_type] -= 1
+            elif len(available[chosen_type]) > 0:
+                chosen = self.random.choice(available[chosen_type])
 
-            while (self.total_items / self.total_pool_size) * 100 < self.options.pool_size.value:
-                roll = self.random.choices(types, weights)
+            if chosen:
+                self.include_data(chosen)
+                if chosen.category == SotmCategory.TeamVillain:
+                    self.team_villains += 1
+                    if self.team_villains == 1:
+                        adjust[0] += 2
+                    elif self.team_villains == 2:
+                        adjust[0] += 1
 
-                chosen = None
-                match roll:
-                    case "villain":
-                        if adjust_villains > 0:
-                            adjust_villains -= 1
-                        elif len(self.available_villains) > 0:
-                            chosen = self.random.choice(self.available_villains)
-                    case "environment":
-                        if adjust_environments > 0:
-                            adjust_environments -= 1
-                        elif len(self.available_environments) > 0:
-                            chosen = self.random.choice(self.available_environments)
-                    case "hero":
-                        if adjust_heroes > 0:
-                            adjust_heroes -= 1
-                        elif len(self.available_heroes) > 0:
-                            chosen = self.random.choice(self.available_heroes)
-                    case "variant":
-                        if adjust_variants > 0:
-                            adjust_variants -= 1
-                        elif len(self.available_variants) > 0:
-                            chosen = self.random.choice(self.available_variants)
-                    case "contender":
-                        if adjust_contenders > 0:
-                            adjust_contenders -= 1
-                        elif len(self.available_contenders) > 0:
-                            chosen = self.random.choice(self.available_contenders)
-                    case "gladiator":
-                        if adjust_gladiators > 0:
-                            adjust_gladiators -= 1
-                        elif len(self.available_gladiators) > 0:
-                            chosen = self.random.choice(self.available_gladiators)
+                    self.ensure_team_villains()
+                elif chosen.category == SotmCategory.Contender:
+                    if len(self.included_contenders) == 1:
+                        adjust[4] += 2
+                    elif len(self.included_contenders) == 2:
+                        adjust[4] += 1
 
-                if chosen:
-                    self.include_data(chosen)
-                    if chosen.category == SotmCategory.TeamVillain:
-                        self.team_villains += 1
-                        if self.team_villains == 1:
-                            adjust_villains += 2
-                        elif self.team_villains == 2:
-                            adjust_villains += 1
+                    self.ensure_contenders()
+                elif chosen.category == SotmCategory.Gladiator:
+                    if len(self.included_gladiators) == 1:
+                        adjust[5] += 2
+                    elif len(self.included_gladiators) == 2:
+                        adjust[5] += 1
 
-                        self.ensure_team_villains()
-                    elif chosen.category == SotmCategory.Contender:
-                        if len(self.included_contenders) == 1:
-                            adjust_contenders += 2
-                        elif len(self.included_contenders) == 2:
-                            adjust_contenders += 1
-
-                        self.ensure_contenders()
-                    elif chosen.category == SotmCategory.Gladiator:
-                        if len(self.included_gladiators) == 1:
-                            adjust_gladiators += 2
-                        elif len(self.included_gladiators) == 2:
-                            adjust_gladiators += 1
-
-                        self.ensure_gladiators()
+                    self.ensure_gladiators()
 
         # Add random items from included items to precollected until start counts are satisfied
         start_hero_bases = []
         start_hero_count = 0
-        start_villains = []
-        start_environments = []
-        start_contenders = []
-        start_gladiators = []
+        self.start_heroes = []
+        self.start_villains = []
+        self.start_environments = []
+        self.start_contenders = []
+        self.start_gladiators = []
         for name in self.options.start_inventory.value:
             d = next((d for d in data if d.name == name), None)
             if d is not None:
@@ -348,53 +346,44 @@ class SotmWorld(World):
                         if d.name not in start_hero_bases:
                             start_hero_bases.append(d.name)
                             start_hero_count += 1
+                            self.start_heroes.append(d.name)
                     case SotmCategory.Variant:
                         if d.base not in start_hero_bases:
                             start_hero_bases.append(d.base)
                             start_hero_count += 1
+                            self.start_heroes.append(d.name)
                     case SotmCategory.Villain | SotmCategory.VillainVariant:
-                        start_villains.append(d.name)
+                        self.start_villains.append(d.name)
                     case SotmCategory.Environment:
-                        start_environments.append(d.name)
+                        self.start_environments.append(d.name)
                     case SotmCategory.Contender:
-                        start_contenders.append(d.name)
+                        self.start_contenders.append(d.name)
                     case SotmCategory.Gladiator:
-                        start_gladiators.append(d.name)
+                        self.start_gladiators.append(d.name)
 
-        for _ in range(start_hero_count, self.options.starting_items.value["heroes"]):
+        for _ in range(start_hero_count, self.starting_items.heroes):
             choices = ([d for d in self.included_heroes if d.name not in start_hero_bases]
                        + [d for d in self.included_variants if d.base not in start_hero_bases])
             chosen = self.random.choice(choices)
             self.multiworld.push_precollected(self.create_item_from_data(chosen))
+            self.start_heroes.append(chosen.name)
             if chosen.category == SotmCategory.Hero:
                 start_hero_bases.append(chosen.name)
             else:
                 start_hero_bases.append(chosen.base)
 
-        included_not_team_villains = [d for d in self.included_villains if d.category != SotmCategory.TeamVillain]
-        for _ in range(len(start_villains), self.options.starting_items.value["villains"]):
-            choices = [d for d in included_not_team_villains if d.name not in start_villains]
-            chosen = self.random.choice(choices)
-            self.multiworld.push_precollected(self.create_item_from_data(chosen))
-            start_villains.append(chosen.name)
-
-        for _ in range(len(start_environments), self.options.starting_items.value["environments"]):
-            choices = [d for d in self.included_environments if d.name not in start_environments]
-            chosen = self.random.choice(choices)
-            self.multiworld.push_precollected(self.create_item_from_data(chosen))
-            start_environments.append(chosen.name)
-
-        for _ in range(len(start_contenders), self.options.starting_items.value["contenders"]):
-            choices = [d for d in self.included_contenders if d.name not in start_contenders]
-            chosen = self.random.choice(choices)
-            self.multiworld.push_precollected((self.create_item_from_data(chosen)))
-            start_contenders.append(chosen.name)
-
-        for _ in range(len(start_gladiators), self.options.starting_items.value["gladiators"]):
-            choices = [d for d in self.included_gladiators if d.name not in start_gladiators]
-            chosen = self.random.choice(choices)
-            self.multiworld.push_precollected((self.create_item_from_data(chosen)))
-            start_gladiators.append(chosen.name)
+        included_non_team_villains = [d for d in self.included_villains if d.category != SotmCategory.TeamVillain]
+        for (included, starting, start_count) in (
+            (included_non_team_villains, self.start_villains, self.starting_items.villains),
+            (self.included_environments, self.start_environments, self.starting_items.environments),
+            (self.included_contenders, self.start_contenders, self.starting_items.contenders),
+            (self.included_gladiators, self.start_gladiators, self.starting_items.gladiators),
+        ):
+            for _ in range(len(starting), start_count):
+                choices = [d for d in included if d.name not in starting]
+                chosen = self.random.choice(choices)
+                self.multiworld.push_precollected(self.create_item_from_data(chosen))
+                starting.append(chosen.name)
 
         self.parse_filler_weights()
 
@@ -424,38 +413,33 @@ class SotmWorld(World):
                     return False
                 self.available_villains.remove(d)
                 self.included_villains.append(d)
-                self.total_items += 1
             case SotmCategory.Environment:
                 if d not in self.available_environments:
                     return False
                 self.available_environments.remove(d)
                 self.included_environments.append(d)
-                self.total_items += 1
             case SotmCategory.Hero:
                 if d not in self.available_heroes:
                     return False
                 self.available_heroes.remove(d)
                 self.included_heroes.append(d)
-                self.total_items += 1
             case SotmCategory.Variant:
                 if d not in self.available_variants:
                     return False
                 self.available_variants.remove(d)
                 self.included_variants.append(d)
-                self.total_items += 1
             case SotmCategory.Contender:
                 if d not in self.available_contenders:
                     return False
                 self.available_contenders.remove(d)
                 self.included_contenders.append(d)
-                self.total_items += 1
             case SotmCategory.Gladiator:
                 if d not in self.available_gladiators:
                     return False
                 self.available_gladiators.remove(d)
                 self.included_gladiators.append(d)
-                self.total_items += 1
 
+        self.total_items += 1
         self.state.items.add(d.name)
 
         for v in self.available_variant_unlocks:
@@ -509,29 +493,36 @@ class SotmWorld(World):
         menu.add_exits({"General Access", "General Access"},
                        {"General Access": lambda state: general_access_rule(state, self.player)})
 
-        for base, variants in base_to_variants.items():
-            if base in self.state.items or any(v in self.state.items for v in variants):
-                event_loc = SotmLocation(self.player, f"Any {base}", None, SotmCategory.Event, menu,
-                                         rule=lambda state, player, b=base, v=variants:
-                                         state.has(b, player) or state.has_any(v, player))
-                event_loc.place_locked_item(SotmItem(self.player, f"Any {base}", None, SotmCategory.Event))
-                menu.locations.append(event_loc)
 
         duo = 0
 
-        for villain in self.included_villains:
-            for n in range(1, self.location_density.villain_normal + 1):
-                name = f"{villain.name} - Normal #{n}"
-                general_access.locations.append(SotmLocation(self.player, name, self.location_name_to_id[name],
-                                                villain.category, general_access, villain.name))
-            for n in range(1, self.location_density.villain_advanced + 1):
-                name = f"{villain.name} - Advanced #{n}"
-                general_access.locations.append(SotmLocation(self.player, name, self.location_name_to_id[name],
-                                                villain.category, general_access, villain.name))
-            self.total_locations += self.location_density.villain_normal + self.location_density.villain_advanced
+        for included in chain(self.included_gladiators, (v for v in self.included_villains if v.name not in (
+                                                                  "Spite: Agent of Gloom", "Skinwalker Gloomweaver"))):
+            for (difficulty, count) in chain(
+                (("Normal", self.location_density.villain_normal),
+                 ("Advanced", self.location_density.villain_advanced)),
+                (("Challenge", self.location_density.villain_challenge),
+                 ("Ultimate", self.location_density.villain_ultimate)) if included.challenge else ()
+            ):
+                self.total_locations += count
+                for n in range(1, count + 1):
+                    name = f"{included.name} - {difficulty} #{n}"
+                    general_access.locations.append(SotmLocation(self.player, name, self.location_name_to_id[name],
+                                                                 included.category, general_access, included.name))
 
-            if villain.name == "Spite: Agent of Gloom" or villain.name == "Skinwalker Gloomweaver":
+        for villain in self.included_villains:
+            if villain.name in ("Spite: Agent of Gloom", "Skinwalker Gloomweaver"):
                 duo += 1
+                for n in range(1, self.location_density.villain_normal + 1):
+                    name = f"{villain.name} - Normal #{n}"
+                    general_access.locations.append(SotmLocation(self.player, name, self.location_name_to_id[name],
+                                                    villain.category, general_access, villain.name))
+                for n in range(1, self.location_density.villain_advanced + 1):
+                    name = f"{villain.name} - Advanced #{n}"
+                    general_access.locations.append(SotmLocation(self.player, name, self.location_name_to_id[name],
+                                                    villain.category, general_access, villain.name))
+                self.total_locations += self.location_density.villain_normal + self.location_density.villain_advanced
+
                 if duo == 2:
                     for n in range(1, self.location_density.villain_challenge + 1):
                         name = f"Spite: Agent of Gloom and Skinwalker Gloomweaver - Challenge #{n}"
@@ -548,35 +539,6 @@ class SotmWorld(World):
                     self.total_locations += (self.location_density.villain_challenge
                                              + self.location_density.villain_ultimate)
 
-            elif not villain.no_challenge:
-                for n in range(1, self.location_density.villain_challenge + 1):
-                    name = f"{villain.name} - Challenge #{n}"
-                    general_access.locations.append(SotmLocation(self.player, name, self.location_name_to_id[name],
-                                                    villain.category, general_access, villain.name))
-                for n in range(1, self.location_density.villain_ultimate + 1):
-                    name = f"{villain.name} - Ultimate #{n}"
-                    general_access.locations.append(SotmLocation(self.player, name, self.location_name_to_id[name],
-                                                    villain.category, general_access, villain.name))
-                self.total_locations += self.location_density.villain_challenge + self.location_density.villain_ultimate
-        for gladiator in self.included_gladiators:
-            for n in range(1, self.location_density.villain_normal + 1):
-                name = f"{gladiator.name} - Normal #{n}"
-                general_access.locations.append(SotmLocation(self.player, name, self.location_name_to_id[name],
-                                                gladiator.category, general_access, gladiator.name))
-            for n in range(1, self.location_density.villain_advanced + 1):
-                name = f"{gladiator.name} - Advanced #{n}"
-                general_access.locations.append(SotmLocation(self.player, name, self.location_name_to_id[name],
-                                                gladiator.category, general_access, gladiator.name))
-            self.total_locations += self.location_density.villain_normal + self.location_density.villain_advanced
-            if not gladiator.no_challenge:
-                for n in range(1, self.location_density.villain_challenge + 1):
-                    name = f"{gladiator.name} - Challenge #{n}"
-                    general_access.locations.append(SotmLocation(self.player, name, self.location_name_to_id[name],
-                                                                 gladiator.category, general_access, gladiator.name))
-                for n in range(1, self.location_density.villain_ultimate + 1):
-                    name = f"{gladiator.name} - Ultimate #{n}"
-                    general_access.locations.append(SotmLocation(self.player, name, self.location_name_to_id[name],
-                                                                 gladiator.category, general_access, gladiator.name))
         for environment in self.included_environments:
             for n in range(1, self.location_density.environment + 1):
                 name = f"{environment.name} - Any Difficulty #{n}"
@@ -589,35 +551,33 @@ class SotmWorld(World):
                 general_access.locations.append(SotmLocation(self.player, name, self.location_name_to_id[name],
                                                 variant.category, general_access, rule=variant.rule))
             self.total_locations += self.location_density.variant
+            self.all_dependencies.update(variant.dependencies)
+
+        for base, variants in base_to_variants.items():
+            if ((base in self.state.items and (base in self.start_heroes or base in self.all_dependencies
+                                               or f"Any {base}" in self.all_dependencies))
+                    or any(v in self.state.items for v in variants
+                           if v in self.start_heroes or v in self.all_dependencies)):
+                event_loc = SotmLocation(self.player, f"Any {base}", None, SotmCategory.Event, menu,
+                                         rule=lambda state, player, b=base, v=variants:
+                                         state.has(b, player) or state.has_any(v, player))
+                event_loc.place_locked_item(SotmItem(self.player, f"Any {base}", None, SotmCategory.Event))
+                menu.locations.append(event_loc)
 
     def create_items(self):
         exclude = [item.name for item in self.multiworld.precollected_items[self.player]]
         items = []
 
-        for villain in self.included_villains:
-            if villain.name not in exclude:
-                items.append(self.create_item_from_data(villain))
+        for included in chain(self.included_villains, self.included_environments, self.included_gladiators):
+            if included.name not in exclude:
+                items.append(self.create_item_from_data(included))
 
-        for environment in self.included_environments:
-            if environment.name not in exclude:
-                items.append(self.create_item_from_data(environment))
-
-        for hero in self.included_heroes:
-            if hero.name not in exclude:
-                items.append(self.create_item_from_data(hero))
-
-        for variant in self.included_variants:
-            if variant.name not in exclude:
-                if variant.category == SotmCategory.Variant:
-                    items.append(self.create_item_from_data(variant))
-
-        for contender in self.included_contenders:
-            if contender.name not in exclude:
-                items.append(self.create_item_from_data(contender))
-
-        for gladiator in self.included_gladiators:
-            if gladiator.name not in exclude:
-                items.append(self.create_item_from_data(gladiator))
+        start_dep = (len(self.start_heroes) + len(self.start_contenders) // 3) < 3
+        if start_dep and self.multiworld.players == 1:
+            raise OptionError("A solo seed cannot generate without at least 3 starting heroes")
+        for included in chain(self.included_heroes, self.included_contenders,
+                              (v for v in self.included_variants if v.category == SotmCategory.Variant)):
+            items.append(self.create_item_from_data(included, start_dep or included.name in self.all_dependencies))
 
         if self.options.scions_are_relative.value == Toggle.option_true:
             self.required_scions = math.floor((self.total_locations - len(items))
@@ -667,8 +627,12 @@ class SotmWorld(World):
 
         self.multiworld.itempool.extend(items)
 
-    def create_item_from_data(self, d: SotmData) -> Item:
-        return SotmItem(self.player, d.name, self.item_name_to_id[d.name], d.category)
+    def create_item_from_data(self, d: SotmData, dependency: Optional[bool] = None) -> Item:
+        if dependency is None:
+            return SotmItem(self.player, d.name, self.item_name_to_id[d.name], d.category)
+        else:
+            return SotmItem(self.player, d.name, self.item_name_to_id[d.name], d.category,
+                            ItemClassification.progression_skip_balancing if dependency else ItemClassification.useful)
 
     def create_item(self, name: str) -> Item:
         if name == "Scion of Oblivaeon":
@@ -815,10 +779,10 @@ class SotmWorld(World):
             "required_variants": self.required_variants,
             "required_villains": self.required_villains,
             "villain_difficulty_points": [
-                self.options.villain_points.value["normal"],
-                self.options.villain_points.value["advanced"],
-                self.options.villain_points.value["challenge"],
-                self.options.villain_points.value["ultimate"]
+                self.villain_points.normal,
+                self.villain_points.advanced,
+                self.villain_points.challenge,
+                self.villain_points.ultimate
             ],
             "locations_per": [
                 self.location_density.villain_normal,

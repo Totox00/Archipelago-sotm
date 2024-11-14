@@ -2,7 +2,7 @@ from typing import Optional, Callable
 
 from BaseClasses import Location, CollectionState
 
-from .Data import data, SotmCategory, difficulties, SotmState, team_villain_count, gladiator_count
+from .Data import data, SotmCategory, SotmState, team_villain_count, gladiator_count
 
 
 class SotmLocation(Location):
@@ -38,26 +38,28 @@ class SotmLocation(Location):
                                   if d.category == SotmCategory.Variant or d.category == SotmCategory.VillainVariant}
                for n in range(1, 6)},
         }
-        villain_names = [d.name for d in data if
-                         d.category == SotmCategory.Villain or d.category == SotmCategory.VillainVariant]
-        team_villain_names = [d.name for d in data if d.category == SotmCategory.TeamVillain]
-        gladiator_names = [d.name for d in data if d.category == SotmCategory.Gladiator]
 
         for n in range(1, 6):
             for difficulty in ["Normal", "Advanced"]:
                 location_name_groups.update({f"Villains - {difficulty} #{n}": {
-                    f"{name} - {difficulty} #{n}" for name in villain_names}})
+                    f"{d.name} - {difficulty} #{n}" for d in data
+                    if d.category in (SotmCategory.Villain, SotmCategory.VillainVariant)}})
+                location_name_groups.update({f"Team Villains - {difficulty} #{n}": {
+                    f"{d.name} - {difficulty} #{n}" for d in data if d.category == SotmCategory.TeamVillain}})
+                location_name_groups.update({f"Gladiators - {difficulty} #{n}": {
+                    f"{d.name} - {difficulty} #{n}" for d in data if d.category == SotmCategory.Gladiator}})
             for difficulty in ["Challenge", "Ultimate"]:
+                location_name_groups.update({f"Team Villains - {difficulty} #{n}": {
+                    f"{d.name} - {difficulty} #{n}" for d in data
+                    if d.category == SotmCategory.TeamVillain and d.challenge}})
+                location_name_groups.update({f"Gladiators - {difficulty} #{n}": {
+                    f"{d.name} - {difficulty} #{n}" for d in data
+                    if d.category == SotmCategory.Gladiator and d.challenge}})
                 next_group = {
-                     f"{name} - {difficulty} #{n}" for name
-                     in villain_names if
-                     name != "Spite: Agent of Gloom" and name != "Skinwalker Gloomweaver"}
+                     f"{d.name} - {difficulty} #{n}" for d in data
+                     if d.category in (SotmCategory.Villain, SotmCategory.VillainVariant) and d.challenge
+                     and d.name != "Spite: Agent of Gloom" and d.name != "Skinwalker Gloomweaver"}
                 next_group.add(f"Spite: Agent of Gloom and Skinwalker Gloomweaver - {difficulty} #{n}")
                 location_name_groups.update({f"Villains - {difficulty} #{n}": next_group})
-            for difficulty in difficulties:
-                location_name_groups.update({f"Team Villains - {difficulty} #{n}": {
-                    f"{name} - {difficulty} #{n}" for name in team_villain_names}})
-                location_name_groups.update({f"Gladiators - {difficulty} #{n}": {
-                    f"{name} - {difficulty} #{n}" for name in gladiator_names}})
 
         return location_name_groups
