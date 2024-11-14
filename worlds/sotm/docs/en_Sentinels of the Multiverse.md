@@ -30,7 +30,25 @@ The goal can be to defeat a number of villains, satisfy the unlock conditions fo
 
 ## What content is supported?
 
-All the sentinels of the multiverse expansions are supported, as well as The Cauldron fan-made expansion.
+All the sentinels of the multiverse expansions are supported, as well as the following fan-made content:
+- The Cauldron
+- Cauldron Promos
+- Order of the Stick
+- Magic The Gathering
+- Dark Souls
+- Krumit's Tale
+- The Adventures of Dr. McNinja
+- Fusion Heroes
+- Adelphophage's Villain Promos
+- Adelphophage's Hero Promos
+- The Venture Brothers
+- Adelphophage's Custom Villains
+- Adelphophage's Custom Heroes
+- Adelphophage's Custom Environments
+- Sentinels of the Buffyverse
+- Union of Heroes
+- Thematically Variable Stuff Whose Only True Common Element Is Really Good Design
+- The Contenders
 
 Sentinels of Earth-Prime content is not currently supported.
 
