@@ -136,7 +136,7 @@ class SotmWorld(World):
     required_client_version = (0, 0, 1)
     item_name_to_id = item_name_to_id
     location_name_to_id = location_name_to_id
-    item_name_groups = SotmItem.get_item_name_groups()
+    item_name_groups = SotmItem.get_item_name_groups(item_name_to_id)
     location_name_groups = SotmLocation.get_location_name_groups()
 
     def __init__(self, multiworld: MultiWorld, player: int):
@@ -492,7 +492,6 @@ class SotmWorld(World):
 
         menu.add_exits({"General Access", "General Access"},
                        {"General Access": lambda state: general_access_rule(state, self.player)})
-
 
         duo = 0
 

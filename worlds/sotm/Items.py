@@ -25,7 +25,7 @@ class SotmItem(Item):
         self.category = category
 
     @staticmethod
-    def get_item_name_groups() -> dict:
+    def get_item_name_groups(item_name_to_id: dict[str, int]) -> dict:
         return {
             "Heroes": {d.name for d in data if d.category == SotmCategory.Hero},
             "Contenders": {d.name for d in data if d.category == SotmCategory.Contender},
@@ -35,4 +35,6 @@ class SotmItem(Item):
             "Team Villains": {d.name for d in data if d.category == SotmCategory.TeamVillain},
             "Gladiators": {d.name for d in data if d.category == SotmCategory.Gladiator},
             "Variants": {d.name for d in data if d.category == SotmCategory.Variant},
+            "Filler": {name for name, id in item_name_to_id.items() if id >> 48 & 0b1111 == 0b1000},
+            "Traps": {name for name, id in item_name_to_id.items() if id >> 48 & 0b1111 == 0b1001}
         }
