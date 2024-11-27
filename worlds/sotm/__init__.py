@@ -304,6 +304,8 @@ class SotmWorld(World):
                 adjust[chosen_type] -= 1
             elif len(available[chosen_type]) > 0:
                 chosen = self.random.choice(available[chosen_type])
+            else:
+                weights[chosen_type] = 0
 
             if chosen:
                 self.include_data(chosen)
