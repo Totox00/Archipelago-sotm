@@ -82,13 +82,23 @@ class ScionsAreRelative(Toggle):
     display_name = "Scions are Relative"
 
 
-class PoolSize(Range):
-    """The minimum portion of the enabled content that is included in the rando
-    Other options might cause this to be exceeded"""
+class PoolSize(OptionDict):
+    """The minimum quantity of each kind of item that is included in the rando
+    Other options might cause this to be exceeded
+    Use -1 to include all of those items"""
     display_name = "Pool Size"
-    range_start = 1
-    range_end = 100
-    default = 100
+    schema = Schema({
+        item: And(int, lambda n: n >= -1)
+        for item in ["villain", "environment", "hero", "variant", "contender", "gladiator"]
+    })
+    default = {
+        "villain": -1,
+        "environment": -1,
+        "hero": -1,
+        "variant": -1,
+        "contender": -1,
+        "gladiator": -1
+    }
 
 
 class IncludeInPool(ItemSet):
@@ -106,27 +116,6 @@ class IncludeVariantsInPool(ItemSet):
 class ExcludeFromPool(ItemSet):
     """Items that will never be included in the pool."""
     display_name = "Exclude from Pool"
-
-
-class ItemWeights(OptionDict):
-    """
-    Specify the weights determining the weights for different item types.
-    If you want no items of a type to be added to the item pool, set it to 0 (Do not delete the entry outright!).
-    This only dictates additional items added after items required for goal or that are specified to always be included.
-    """
-    display_name = "Item Weights"
-    schema = Schema({
-        item: And(int, lambda n: n >= 0)
-        for item in ["villain", "environment", "hero", "variant", "contender", "gladiator"]
-    })
-    default = {
-        "villain": 10,
-        "environment": 20,
-        "hero": 30,
-        "variant": 60,
-        "contender": 0,
-        "gladiator": 0
-    }
 
 
 class FillerWeights(OptionList):
@@ -377,7 +366,6 @@ class SotmOptions(PerGameCommonOptions):
     include_in_pool: IncludeInPool
     include_variants_in_pool: IncludeVariantsInPool
     exclude_from_pool: ExcludeFromPool
-    item_weights: ItemWeights
     filler_weights: FillerWeights
     location_density: LocationDensity
     starting_items: StartingItems
@@ -386,7 +374,7 @@ class SotmOptions(PerGameCommonOptions):
 
 sotm_option_groups = [
     OptionGroup("Item Pool", [EnabledSets, PoolSize, IncludeInPool, IncludeVariantsInPool, ExcludeFromPool,
-                              ItemWeights, FillerWeights]),
+                              FillerWeights]),
     OptionGroup("Goal", [RequiredVillains, VillainPoints, RequiredVariants, RequiredScions, ScionsAreRelative]),
     OptionGroup("Misc", [LocationDensity, StartingItems, DeathLink]),
 ]

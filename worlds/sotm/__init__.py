@@ -15,6 +15,9 @@ from .Data import SotmSource, SotmData, SotmCategory, general_access_rule, data,
 from .Id import item_name_to_id, location_name_to_id
 
 
+item_types = ["villain", "environment", "hero", "variant", "contender", "gladiator"]
+
+
 class SotmWeb(WebWorld):
     bug_report_page = "https://github.com/Totox00/ap-sotm-client/issues"
     theme = "ocean"
@@ -211,9 +214,12 @@ class SotmWorld(World):
         self.required_variants = min(self.options.required_variants.value, len(self.available_variant_unlocks))
 
         # We can take a shortcut if pool size is maximum
-        if self.options.pool_size.value == 100:
-            for d in self.available():
-                self.include_data(d)
+        available = [self.available_villains, self.available_environments, self.available_heroes,
+                     self.available_variants, self.available_contenders, self.available_gladiators]
+        for i in range(6):
+            if self.options.pool_size.value[item_types[i]] == -1:
+                for d in available[i]:
+                    self.include_data(d)
 
         # Add starting items to pool
         starting_names = [item for item in self.options.start_inventory.value]
@@ -288,48 +294,22 @@ class SotmWorld(World):
                 self.include_data(self.random.choice(self.available_environments))
 
         # Add random items to included items until pool size is satisfied
-        # Adjust for items added previously so weights reflect the full pool
-        adjust = [len(included) for included in (self.included_villains, self.included_environments,
-                                                 self.included_heroes, self.included_variants,
-                                                 self.included_contenders, self.included_gladiators)]
         available = [self.available_villains, self.available_environments, self.available_heroes,
                      self.available_variants, self.available_contenders, self.available_gladiators]
-        weights = [self.options.item_weights.value[t] for t in ("villain", "environment", "hero",
-                                                                "variant", "contender", "gladiator")]
+        included = [self.included_villains, self.included_environments, self.included_heroes,
+                    self.included_variants, self.included_contenders, self.included_gladiators]
+        minima = [self.options.pool_size.value[t] for t in item_types]
 
-        while (self.total_items / self.total_pool_size) * 100 < self.options.pool_size.value:
-            [chosen_type] = self.random.choices(range(6), weights)
-            chosen = None
-            if adjust[chosen_type] > 0:
-                adjust[chosen_type] -= 1
-            elif len(available[chosen_type]) > 0:
-                chosen = self.random.choice(available[chosen_type])
-            else:
-                weights[chosen_type] = 0
-
-            if chosen:
+        for i in range(6):
+            if minima[i] > len(included[i]):
+                chosen = self.random.choice(available[i])
                 self.include_data(chosen)
                 if chosen.category == SotmCategory.TeamVillain:
                     self.team_villains += 1
-                    if self.team_villains == 1:
-                        adjust[0] += 2
-                    elif self.team_villains == 2:
-                        adjust[0] += 1
-
                     self.ensure_team_villains()
                 elif chosen.category == SotmCategory.Contender:
-                    if len(self.included_contenders) == 1:
-                        adjust[4] += 2
-                    elif len(self.included_contenders) == 2:
-                        adjust[4] += 1
-
                     self.ensure_contenders()
                 elif chosen.category == SotmCategory.Gladiator:
-                    if len(self.included_gladiators) == 1:
-                        adjust[5] += 2
-                    elif len(self.included_gladiators) == 2:
-                        adjust[5] += 1
-
                     self.ensure_gladiators()
 
         # Add random items from included items to precollected until start counts are satisfied
