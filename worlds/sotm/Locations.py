@@ -2,7 +2,7 @@ from typing import Optional, Callable
 
 from BaseClasses import Location, CollectionState
 
-from .Data import data, SotmCategory, SotmState, team_villain_count, gladiator_count
+from .Data import data, SotmCategory, SotmState
 
 
 class SotmLocation(Location):
@@ -17,17 +17,36 @@ class SotmLocation(Location):
             category: SotmCategory,
             parent,
             req: Optional[str] = None,
-            rule: Optional[Callable[[CollectionState | SotmState, int], bool]] = None):
+            rule: Optional[Callable[[CollectionState | SotmState, int], bool]] = None,
+            min_heroes: Optional[int] = None):
         super().__init__(player, name, address, parent)
         self.category = category
+
         if rule is not None:
-            self.access_rule = lambda state: rule(state, player)
-        elif category == SotmCategory.TeamVillain:
-            self.access_rule = lambda state: state.has(req, player) and team_villain_count(state, player)
-        elif category == SotmCategory.Gladiator:
-            self.access_rule = lambda state: state.has(req, player) and gladiator_count(state, player)
+            if min_heroes is None:
+                self.access_rule = lambda state: rule(state, player)
+            else:
+                self.access_rule = lambda state: (rule(state, player)
+                                                  and state.has("Unique Hero Thirds", player, min_heroes * 3))
+        elif min_heroes is None:
+            if category == SotmCategory.TeamVillain:
+                self.access_rule = lambda state: state.has(req, player) and state.has("Team Villains", player, 3)
+            elif category == SotmCategory.Gladiator:
+                self.access_rule = lambda state: state.has(req, player) and state.has("Gladiators", player, 3)
+            else:
+                self.access_rule = lambda state: state.has(req, player)
         else:
-            self.access_rule = lambda state: state.has(req, player)
+            if category == SotmCategory.TeamVillain:
+                self.access_rule = lambda state: (state.has(req, player)
+                                                  and state.has("Team Villains", player, 3)
+                                                  and state.has("Unique Hero Thirds", player, min_heroes * 3))
+            elif category == SotmCategory.Gladiator:
+                self.access_rule = lambda state: (state.has(req, player)
+                                                  and state.has("Gladiators", player, 3)
+                                                  and state.has("Unique Hero Thirds", player, min_heroes * 3))
+            else:
+                self.access_rule = lambda state: (state.has(req, player)
+                                                  and state.has("Unique Hero Thirds", player, min_heroes * 3))
 
     @staticmethod
     def get_location_name_groups() -> dict:

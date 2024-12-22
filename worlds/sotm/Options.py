@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from schema import Schema, And, Optional
+from schema import Schema, And, Optional, Or
 
 from Options import Toggle, Range, Choice, PerGameCommonOptions, ItemSet, OptionDict, OptionSet, OptionGroup, \
     OptionList
@@ -85,19 +85,24 @@ class ScionsAreRelative(Toggle):
 class PoolSize(OptionDict):
     """The minimum quantity of each kind of item that is included in the rando
     Other options might cause this to be exceeded
-    Use -1 to include all of those items"""
+    Use X% to include a portion of all available items of that kind
+    Use X%+ to include a portion of all available items
+    Use a min and max value to use a random value in that range
+    """
     display_name = "Pool Size"
     schema = Schema({
-        item: And(int, lambda n: n >= -1)
-        for item in ["villain", "environment", "hero", "variant", "contender", "gladiator"]
+        item: Or(And(int, lambda n: n >= 0), str,
+                 Schema({"min": Or(And(int, lambda n: n >= 0), str),
+                         "max": Or(And(int, lambda n: n >= 0), str)}))
+        for item in ["villains", "environments", "heroes", "variants", "contenders", "gladiators"]
     })
     default = {
-        "villain": -1,
-        "environment": -1,
-        "hero": -1,
-        "variant": -1,
-        "contender": -1,
-        "gladiator": -1
+        "villains": "100%",
+        "environments": "100%",
+        "heroes": "100%",
+        "variants": "100%",
+        "contenders": "100%",
+        "gladiators": "100%"
     }
 
 
@@ -337,6 +342,29 @@ class StartingItems(OptionDict):
     }
 
 
+class VillainDifficulties(OptionDict):
+    """
+    Specify the minimum unique heroes logically required for beating villains on various difficulties.
+    In the case of multiple definitions, the most specific one is used.
+    """
+    display_name = "Villain Difficulties"
+    schema = Schema({
+        str: Or(int, {
+            Optional("Normal"): Or(int),
+            Optional("Advanced"): Or(int),
+            Optional("Challenge"): Or(int),
+            Optional("Ultimate"): Or(int)
+        })
+    })
+    default = {
+        "Normal": 3, "Advanced": 3, "Challenge": 3, "Ultimate": 8, "Oblivaeon": 20,
+        "The Chairman": {"Normal": 6, "Advanced": 6, "Challenge": 8, "Ultimate": 12},
+        "The Matriarch": {"Normal": 5, "Advanced": 7, "Challenge": 7, "Ultimate": 10},
+        "Iron Legacy": {"Normal": 8, "Advanced": 9, "Challenge": 9, "Ultimate": 10},
+        "Progeny": {"Normal": 6, "Advanced": 7, "Challenge": 7, "Ultimate": 8}
+    }
+
+
 class DeathLink(Choice):
     """
     When you die, everyone dies. Of course the reverse is true too.
@@ -369,6 +397,7 @@ class SotmOptions(PerGameCommonOptions):
     filler_weights: FillerWeights
     location_density: LocationDensity
     starting_items: StartingItems
+    villain_difficulties: VillainDifficulties
     death_link: DeathLink
 
 
@@ -376,5 +405,5 @@ sotm_option_groups = [
     OptionGroup("Item Pool", [EnabledSets, PoolSize, IncludeInPool, IncludeVariantsInPool, ExcludeFromPool,
                               FillerWeights]),
     OptionGroup("Goal", [RequiredVillains, VillainPoints, RequiredVariants, RequiredScions, ScionsAreRelative]),
-    OptionGroup("Misc", [LocationDensity, StartingItems, DeathLink]),
+    OptionGroup("Misc", [LocationDensity, StartingItems, VillainDifficulties, DeathLink]),
 ]
