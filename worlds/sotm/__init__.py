@@ -626,14 +626,16 @@ class SotmWorld(World):
                         if not f_type.name_neg:
                             raise OptionError(f"Filler {f_type.name} does not have a negative version")
                         self.filler_options.append(FillerOption(f_type.name_neg, f_type.type, True,
-                                                                specificity, damage_type, [max] * length, min))
+                                                                specificity, damage_type,
+                                                                [max] * length if specificity > 0 else max, min))
                         self.filler_weights.append(weight)
                         self.filler_weights_pos.append(0)
                     if (variant & 2) > 0:
                         if not f_type.name_pos:
                             raise OptionError(f"Filler {f_type.name} does not have a positive version")
                         self.filler_options.append(FillerOption(f_type.name_pos, f_type.type, False,
-                                                                specificity, damage_type, [max] * length, min))
+                                                                specificity, damage_type,
+                                                                [max] * length if specificity > 0 else max, min))
                         self.filler_weights.append(weight)
                         self.filler_weights_pos.append(weight)
             else:
