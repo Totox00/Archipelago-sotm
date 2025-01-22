@@ -621,7 +621,9 @@ class SotmWorld(World):
             min = current_filler.get("min", None)
             match f_type.type:
                 case FillerType.Hero:
-                    length = len(self.included_heroes) if specificity == 1 else len(self.included_variants)
+                    length = len(self.included_heroes)
+                    if specificity == 2:
+                        length += len(self.included_variants)
                 case FillerType.Villain:
                     length = len(self.included_villains)
                 case _:
@@ -687,7 +689,11 @@ class SotmWorld(World):
                 if chosen.specificity == 1:
                     specifier = f"Any {self.included_heroes[selected].name}"
                 else:
-                    specifier = f"{self.included_variants[selected].name}"
+                    if selected > len(self.included_heroes):
+                        selected -= len(self.included_heroes)
+                        specifier = f"{self.included_variants[selected].name}"
+                    else:
+                        specifier = f"{self.included_heroes[selected].name}"
             else:
                 specifier = f"{self.included_villains[selected].name}"
         return f"{chosen.name.replace('[TYPE]', chosen.damage_type)} ({specifier})", chosen.is_trap
