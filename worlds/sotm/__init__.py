@@ -689,7 +689,7 @@ class SotmWorld(World):
                 if chosen.specificity == 1:
                     specifier = f"Any {self.included_heroes[selected].name}"
                 else:
-                    if selected > len(self.included_heroes):
+                    if selected >= len(self.included_heroes):
                         selected -= len(self.included_heroes)
                         specifier = f"{self.included_variants[selected].name}"
                     else:
