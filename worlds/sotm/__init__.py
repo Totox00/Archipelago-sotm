@@ -11,7 +11,7 @@ from .Items import SotmItem
 from .Locations import SotmLocation
 from .Options import SotmOptions, sotm_option_groups
 from .Data import SotmSource, SotmData, SotmCategory, data, difficulties, SotmState, sources, FillerType, \
-                  damage_types, filler, base_to_variants
+    damage_types, filler, base_to_variants, packs
 from .Id import item_name_to_id, location_name_to_id
 
 
@@ -153,6 +153,10 @@ class SotmWorld(World):
         self.possible_variants = []
 
     def generate_early(self):
+        for pack, pack_data in packs.items():
+            if pack_data["name"] in self.options.enabled_sets.value:
+                for source in pack_data["contains"]:
+                    self.enabled_sources.add(source)
         for source, source_data in sources.items():
             if source_data["name"] in self.options.enabled_sets.value:
                 self.enabled_sources.add(source)
@@ -579,7 +583,10 @@ class SotmWorld(World):
         else:
             item_data = self.find_data(name)
             if item_data is None:
-                raise OptionError(f"Item {name} does not exist")
+                id = self.item_name_to_id.get(name, None)
+                if id is None:
+                    raise OptionError(f"Item {name} does not exist")
+                return SotmItem(self.player, name, id, SotmCategory.Trap if (id >> 48) & 1 > 0 else SotmCategory.Filler)
             return SotmItem(self.player, name, self.item_name_to_id[name], item_data.category, base=item_data.base)
 
     def find_data(self, name: str) -> Optional[SotmData]:

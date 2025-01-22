@@ -4,21 +4,16 @@ from schema import Schema, And, Optional, Or
 
 from Options import Toggle, Range, Choice, PerGameCommonOptions, ItemSet, OptionDict, OptionSet, OptionGroup, \
     OptionList
-from worlds.sotm.Data import sources, data, SotmCategory, filler
+from worlds.sotm.Data import sources, data, SotmCategory, filler, packs, enabled_sets_doc
 
 
 class EnabledSets(OptionSet):
-    """
-    Specify all sets that content can be used for. Content from the base game is always included.
-    The Following sources are supported:
-
-    """
     display_name = "Enabled Sets"
-    default = frozenset(source["name"] for source in sources.values() if source["default"])
-    valid_keys = [source["name"] for source in sources.values()]
+    default = frozenset(["Official"])
+    valid_keys = [source["name"] for source in sources.values()] + [pack["name"] for pack in packs.values()]
 
 
-EnabledSets.__doc__ = EnabledSets.__doc__[0:-4] + "\n".join(f"# - {source['name']}" for source in sources.values())
+EnabledSets.__doc__ = enabled_sets_doc
 
 
 class SeparateVariantItems(Choice):
