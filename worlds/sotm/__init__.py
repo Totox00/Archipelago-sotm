@@ -241,7 +241,7 @@ class SotmWorld(World):
             self.include_variant_unlock(variant_data)
 
         # Add items until there are enough for the required variant counts
-        while len(self.possible_variants) < self.options.required_variants.value:
+        while len(self.possible_variants) < self.required_variants:
             needed = self.min_needed_for_variant(self.random.choice(self.available_variant_unlocks))
             for d in needed:
                 self.include_data(d)
@@ -252,7 +252,7 @@ class SotmWorld(World):
 
         # Add villains until there are enough for the starting and required villain counts
         needed_villains = max(self.starting_items.villains,
-                              math.ceil(self.options.required_villains.value / self.total_possible_villain_points))
+                              math.ceil(self.required_villains / self.total_possible_villain_points))
         while len(self.included_villains) < needed_villains:
             self.include_data(chosen := self.random.choice(self.available_villains))
             if chosen.category == SotmCategory.TeamVillain:
