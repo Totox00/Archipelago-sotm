@@ -754,7 +754,7 @@ class SotmWorld(World):
         return changed
 
     def remove(self, state: CollectionState, item: SotmItem):
-        changed = super().collect(state, item)
+        changed = super().remove(state, item)
         match item.category:
             case SotmCategory.Hero:
                 state.prog_items[self.player][f"Any {item.name}"] -= 1
