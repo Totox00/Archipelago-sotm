@@ -81,7 +81,6 @@ class PoolSize(OptionDict):
     """The minimum quantity of each kind of item that is included in the rando
     Other options might cause this to be exceeded
     Use X% to include a portion of all available items of that kind
-    Use X%+ to include a portion of all available items
     Use a min and max value to use a random value in that range
     """
     display_name = "Pool Size"

@@ -693,8 +693,6 @@ class SotmWorld(World):
             return value
         if value.endswith("%"):
             return math.floor(max(min(float(value[:-1]), 100.0), 0.0) / 100 * len(available))
-        if value.endswith("%+"):
-            return math.floor(max(min(float(value[:-2]), 100.0), 0.0) / 100 * self.total_pool_size)
         raise OptionError(f"Invalid pool size value {value}")
 
     def set_rules(self) -> None:
@@ -740,12 +738,16 @@ class SotmWorld(World):
                 changed = True
             case item.category.Environment:
                 state.prog_items[self.player]["Environments"] += 1
+                changed = True
             case item.category.Villain | item.category.VillainVariant:
                 state.prog_items[self.player]["Villains"] += 1
+                changed = True
             case item.category.TeamVillain:
                 state.prog_items[self.player]["Team Villains"] += 1
+                changed = True
             case item.category.Contender:
                 state.prog_items[self.player]["Unique Hero Thirds"] += 1
+                changed = True
             case item.category.Gladiator:
                 state.prog_items[self.player]["Gladiators"] += 1
                 changed = True
@@ -766,12 +768,16 @@ class SotmWorld(World):
                 changed = True
             case item.category.Environment:
                 state.prog_items[self.player]["Environments"] -= 1
+                changed = True
             case item.category.Villain | item.category.VillainVariant:
                 state.prog_items[self.player]["Villains"] -= 1
+                changed = True
             case item.category.TeamVillain:
                 state.prog_items[self.player]["Team Villains"] -= 1
+                changed = True
             case item.category.Contender:
                 state.prog_items[self.player]["Unique Hero Thirds"] -= 1
+                changed = True
             case item.category.Gladiator:
                 state.prog_items[self.player]["Gladiators"] -= 1
                 changed = True
