@@ -61,7 +61,7 @@ class SotmLocation(Location):
         }
 
         for n in range(1, 6):
-            for difficulty in ["Normal", "Advanced", "Challenge", "Ultimate"]:
+            for difficulty in ["Normal", "Advanced"]:
                 location_name_groups.update({f"Villains - {difficulty} #{n}": {
                     f"{d.name} - {difficulty} #{n}" for d in data
                     if d.category in (SotmCategory.Villain, SotmCategory.VillainVariant)}})
@@ -69,5 +69,16 @@ class SotmLocation(Location):
                     f"{d.name} - {difficulty} #{n}" for d in data if d.category == SotmCategory.TeamVillain}})
                 location_name_groups.update({f"Gladiators - {difficulty} #{n}": {
                     f"{d.name} - {difficulty} #{n}" for d in data if d.category == SotmCategory.Gladiator}})
+
+            for difficulty in ["Challenge", "Ultimate"]:
+                location_name_groups.update({f"Villains - {difficulty} #{n}": {
+                    f"{d.name} - {difficulty} #{n}" for d in data
+                    if d.category in (SotmCategory.Villain, SotmCategory.VillainVariant) and d.challenge is not None}})
+                location_name_groups.update({f"Team Villains - {difficulty} #{n}": {
+                    f"{d.name} - {difficulty} #{n}" for d in data
+                    if d.category == SotmCategory.TeamVillain and d.challenge is not None}})
+                location_name_groups.update({f"Gladiators - {difficulty} #{n}": {
+                    f"{d.name} - {difficulty} #{n}" for d in data
+                    if d.category == SotmCategory.Gladiator and d.challenge is not None}})
 
         return location_name_groups
