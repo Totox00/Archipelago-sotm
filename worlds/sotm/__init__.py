@@ -35,7 +35,8 @@ class LocationDensity(NamedTuple):
     villain_challenge: int
     villain_ultimate: int
     environment: int
-    variant: int
+    hero: int
+    variant_unlock: int
 
 
 class VillainPoints(NamedTuple):
@@ -58,16 +59,14 @@ class FillerOption:
     type: FillerType
     is_trap: bool
     specificity: int
-    damage_type: str
     remaining: Optional[int] | list[int] | list[None]
     min: Optional[int]
 
-    def __init__(self, name, type, is_trap, specificity, damage_type, remaining, min):
+    def __init__(self, name, type, is_trap, specificity, remaining, min):
         self.name = name
         self.type = type
         self.is_trap = is_trap
         self.specificity = specificity
-        self.damage_type = damage_type
         self.remaining = remaining
         self.min = min
 
@@ -84,8 +83,6 @@ class SotmWorld(World):
     options: SotmOptions
     topology_present: bool = False
     web = SotmWeb()
-    data_version = 1
-    base_id = 27181774
 
     enabled_sources: Set[SotmSource]
 
@@ -132,7 +129,7 @@ class SotmWorld(World):
     filler_weights: list[int]
     filler_weights_pos: list[int]
 
-    required_client_version = (0, 3, 0)
+    required_client_version = (0, 4, 0)
     item_name_to_id = item_name_to_id
     location_name_to_id = location_name_to_id
     item_name_groups = SotmItem.get_item_name_groups(item_name_to_id)
@@ -167,7 +164,8 @@ class SotmWorld(World):
             self.options.location_density.value["villain"]["challenge"],
             self.options.location_density.value["villain"]["ultimate"],
             self.options.location_density.value["environment"],
-            self.options.location_density.value["variant"]
+            self.options.location_density.value["hero"],
+            self.options.location_density.value["variant_unlock"]
         )
 
         self.villain_points = VillainPoints(
@@ -501,18 +499,21 @@ class SotmWorld(World):
                             SotmLocation(self.player, name, self.location_name_to_id[name], included.category,
                                          general_access, included.name, included.challenge_rule, min_heroes))
 
-        for environment in self.included_environments:
-            for n in range(1, self.location_density.environment + 1):
-                name = f"{environment.name} - Any Difficulty #{n}"
-                general_access.locations.append(SotmLocation(self.player, name, self.location_name_to_id[name],
-                                                environment.category, general_access, environment.name))
-            self.total_locations += self.location_density.environment
+        for (included, count) in ((self.included_heroes, self.location_density.hero),
+                                  (self.included_variants, self.location_density.hero),
+                                  (self.included_environments, self.location_density.environment)):
+            for data in included:
+                for n in range(1, count + 1):
+                    name = f"{data.name} - Any Difficulty #{n}"
+                    general_access.locations.append(SotmLocation(self.player, name, self.location_name_to_id[name],
+                                                    data.category, general_access, data.name))
+                self.total_locations += count
         for variant in self.possible_variants:
-            for n in range(1, self.location_density.variant + 1):
+            for n in range(1, self.location_density.variant_unlock + 1):
                 name = f"{variant.name} - Unlock #{n}"
                 general_access.locations.append(SotmLocation(self.player, name, self.location_name_to_id[name],
                                                 variant.category, general_access, rule=variant.rule))
-            self.total_locations += self.location_density.variant
+            self.total_locations += self.location_density.variant_unlock
 
     def create_items(self):
         exclude = [item.name for item in self.multiworld.precollected_items[self.player]]
@@ -546,8 +547,7 @@ class SotmWorld(World):
                             if chosen.remaining == 0:
                                 self.filler_weights[idx] = 0
                                 self.filler_weights_pos[idx] = 0
-                        name = chosen.name.replace("[TYPE]", chosen.damage_type)
-                        items.append(SotmItem(self.player, name, self.item_name_to_id[name],
+                        items.append(SotmItem(self.player, chosen.name, self.item_name_to_id[chosen.name],
                                               SotmCategory.Trap if chosen.is_trap else SotmCategory.Filler))
                     else:
                         for selected in range(len(chosen.remaining)):
@@ -563,7 +563,7 @@ class SotmWorld(World):
                                     specifier = f"{self.included_variants[selected].name}"
                             else:
                                 specifier = f"{self.included_villains[selected].name}"
-                            name = f"{chosen.name.replace('[TYPE]', chosen.damage_type)} ({specifier})"
+                            name = f"{chosen.name} ({specifier})"
                             items.append(SotmItem(self.player, name, self.item_name_to_id[name],
                                                   SotmCategory.Trap if chosen.is_trap else SotmCategory.Filler))
 
@@ -616,7 +616,6 @@ class SotmWorld(World):
             else:
                 variant = (2 if f_type.name_pos else 0) | (1 if f_type.name_neg else 0)
             specificity = current_filler.get("specificity", 0)
-            typed = current_filler.get("typed", False)
             max = current_filler.get("max", None)
             min = current_filler.get("min", None)
             match f_type.type:
@@ -629,41 +628,20 @@ class SotmWorld(World):
                 case _:
                     length = 1
             weight = current_filler.get("weight")
-            if typed:
-                for damage_type in damage_types:
-                    if (variant & 1) > 0:
-                        if not f_type.name_neg:
-                            raise OptionError(f"Filler {f_type.name} does not have a negative version")
-                        self.filler_options.append(FillerOption(f_type.name_neg, f_type.type, True,
-                                                                specificity, damage_type,
-                                                                [max] * length if specificity > 0 else max, min))
-                        self.filler_weights.append(weight)
-                        self.filler_weights_pos.append(0)
-                    if (variant & 2) > 0:
-                        if not f_type.name_pos:
-                            raise OptionError(f"Filler {f_type.name} does not have a positive version")
-                        self.filler_options.append(FillerOption(f_type.name_pos, f_type.type, False,
-                                                                specificity, damage_type,
-                                                                [max] * length if specificity > 0 else max, min))
-                        self.filler_weights.append(weight)
-                        self.filler_weights_pos.append(weight)
-            else:
-                if (variant & 1) > 0:
-                    if not f_type.name_neg:
-                        raise OptionError(f"Filler {f_type.name} does not have a negative version")
-                    self.filler_options.append(FillerOption(f_type.name_neg, f_type.type, True,
-                                                            specificity, "",
-                                                            [max] * length if specificity > 0 else max, min))
-                    self.filler_weights.append(weight)
-                    self.filler_weights_pos.append(0)
-                if (variant & 2) > 0:
-                    if not f_type.name_pos:
-                        raise OptionError(f"Filler {f_type.name} does not have a positive version")
-                    self.filler_options.append(FillerOption(f_type.name_pos, f_type.type, False,
-                                                            specificity, "",
-                                                            [max] * length if specificity > 0 else max, min))
-                    self.filler_weights.append(weight)
-                    self.filler_weights_pos.append(weight)
+            if (variant & 1) > 0:
+                if not f_type.name_neg:
+                    raise OptionError(f"Filler {f_type.name} does not have a negative version")
+                self.filler_options.append(FillerOption(f_type.name_neg, f_type.type, True,
+                                                        specificity, [max] * length if specificity > 0 else max, min))
+                self.filler_weights.append(weight)
+                self.filler_weights_pos.append(0)
+            if (variant & 2) > 0:
+                if not f_type.name_pos:
+                    raise OptionError(f"Filler {f_type.name} does not have a positive version")
+                self.filler_options.append(FillerOption(f_type.name_pos, f_type.type, False,
+                                                        specificity, [max] * length if specificity > 0 else max, min))
+                self.filler_weights.append(weight)
+                self.filler_weights_pos.append(weight)
 
     def resolve_filler(self, force_pos: bool = False) -> (str, bool):
         [idx] = self.random.choices(range(len(self.filler_options)),
@@ -675,7 +653,7 @@ class SotmWorld(World):
                 if chosen.remaining == 0:
                     self.filler_weights[idx] = 0
                     self.filler_weights_pos[idx] = 0
-            return chosen.name.replace("[TYPE]", chosen.damage_type), chosen.is_trap
+            return chosen.name, chosen.is_trap
         else:
             if any(chosen.remaining):
                 [selected] = self.random.choices(range(len(chosen.remaining)), chosen.remaining)
@@ -696,7 +674,7 @@ class SotmWorld(World):
                         specifier = f"{self.included_heroes[selected].name}"
             else:
                 specifier = f"{self.included_villains[selected].name}"
-        return f"{chosen.name.replace('[TYPE]', chosen.damage_type)} ({specifier})", chosen.is_trap
+        return f"{chosen.name} ({specifier})", chosen.is_trap
 
     def resolve_pool_size(self):
         self.pool_size = []
@@ -801,22 +779,22 @@ class SotmWorld(World):
 
     def fill_slot_data(self) -> Dict[str, object]:
         return {
-            "required_scions": self.required_scions,
-            "required_variants": self.required_variants,
-            "required_villains": self.required_villains,
-            "villain_difficulty_points": [
+            "d": [
+                self.required_scions,
+                self.required_variants,
+                self.required_villains,
                 self.villain_points.normal,
                 self.villain_points.advanced,
                 self.villain_points.challenge,
-                self.villain_points.ultimate
-            ],
-            "locations_per": [
+                self.villain_points.ultimate,
                 self.location_density.villain_normal,
                 self.location_density.villain_advanced,
                 self.location_density.villain_challenge,
                 self.location_density.villain_ultimate,
+                self.location_density.hero,
                 self.location_density.environment,
-                self.location_density.variant
-            ],
-            "death_link": {"false": 0, "individual": 1, "team": 2}[self.options.death_link.value]
+                self.location_density.variant_unlock,
+                self.options.filler_duration.value,
+                {"false": 0, "individual": 1, "team": 2}[self.options.death_link.value]
+            ]
         }

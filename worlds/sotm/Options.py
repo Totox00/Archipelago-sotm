@@ -155,9 +155,6 @@ class FillerWeights(OptionList):
       0 - all items,
       1 - a specific hero/villain, or
       2 - a specific hero variant
-    - typed: Can be true or false. Defaults to false.
-      Specifies if the filler affects all damage or only damage of a specific type.
-      Only does something for damage-related filler.
     """
     display_name = "Filler Weights"
     schema = Schema([{
@@ -166,8 +163,7 @@ class FillerWeights(OptionList):
         Optional("min"): And(int, lambda n: n >= 0),
         Optional("max"): And(int, lambda n: n >= 0),
         Optional("variant"): lambda s: s in ("pos", "neg", "both"),
-        Optional("specificity"): And(int, lambda n: n in (0, 1, 2)),
-        Optional("typed"): bool,
+        Optional("specificity"): And(int, lambda n: n in (0, 1, 2))
     }])
     default = [
         {
@@ -285,6 +281,17 @@ class FillerWeights(OptionList):
     ]
 
 
+class FillerDuration(Range):
+    """
+    The number of games it will take before the effect of a filler or traps wears off.
+    Only games where the filler or trap is relevant cause it to wear off.
+    """
+    display_name = "Filler Duration"
+    range_start = 1
+    range_end = 1024
+    default = 5
+
+
 class LocationDensity(OptionDict):
     """
     Specify the number of items placed at each location.
@@ -300,7 +307,8 @@ class LocationDensity(OptionDict):
             "ultimate": And(int, lambda n: 0 <= n <= 5)
         },
         "environment": And(int, lambda n: 0 <= n <= 5),
-        "variant": And(int, lambda n: 0 <= n <= 5),
+        "hero": And(int, lambda n: 0 <= n <= 5),
+        "variant_unlock": And(int, lambda n: 0 <= n <= 5),
     })
     default = {
         "villain": {
@@ -310,7 +318,8 @@ class LocationDensity(OptionDict):
             "ultimate": 1
         },
         "environment": 1,
-        "variant": 1,
+        "hero": 0,
+        "variant_unlock": 1,
     }
 
 
@@ -390,6 +399,7 @@ class SotmOptions(PerGameCommonOptions):
     include_variants_in_pool: IncludeVariantsInPool
     exclude_from_pool: ExcludeFromPool
     filler_weights: FillerWeights
+    filler_duration: FillerDuration
     location_density: LocationDensity
     starting_items: StartingItems
     villain_difficulties: VillainDifficulties
@@ -398,7 +408,7 @@ class SotmOptions(PerGameCommonOptions):
 
 sotm_option_groups = [
     OptionGroup("Item Pool", [EnabledSets, PoolSize, IncludeInPool, IncludeVariantsInPool, ExcludeFromPool,
-                              FillerWeights]),
+                              FillerWeights, FillerDuration]),
     OptionGroup("Goal", [RequiredVillains, VillainPoints, RequiredVariants, RequiredScions, ScionsAreRelative]),
     OptionGroup("Misc", [LocationDensity, StartingItems, VillainDifficulties, DeathLink]),
 ]
