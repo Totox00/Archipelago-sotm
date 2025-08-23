@@ -567,6 +567,9 @@ class SotmWorld(World):
                             items.append(SotmItem(self.player, name, self.item_name_to_id[name],
                                                   SotmCategory.Trap if chosen.is_trap else SotmCategory.Filler))
 
+        if len(items) > self.total_locations:
+            print(f"{self.player_name} har more items than locations. If generation fails, you may need to increase location_density")
+
         for _ in range(0, self.total_locations - len(items)):
             name, is_trap = self.resolve_filler()
             items.append(SotmItem(self.player, name, self.item_name_to_id[name],
@@ -644,6 +647,11 @@ class SotmWorld(World):
                 self.filler_weights_pos.append(weight)
 
     def resolve_filler(self, force_pos: bool = False) -> (str, bool):
+        if len(self.filler_options) == 0:
+            raise OptionError("filler_weights must include some kind of filler")
+        elif sum(self.filler_weights_pos if force_pos else self.filler_weights) == 0:
+            raise OptionError("filler_weights must include at least one kind of filler with a positive weight and no maximum")
+
         [idx] = self.random.choices(range(len(self.filler_options)),
                                     self.filler_weights_pos if force_pos else self.filler_weights)
         chosen = self.filler_options[idx]
