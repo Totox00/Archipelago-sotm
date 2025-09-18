@@ -282,6 +282,8 @@ class SotmWorld(World):
         # Oblivaeon requires 5 environments if part of goal
         if self.options.required_scions.value > 0:
             while len(self.included_environments) < 5:
+                if len(self.available_environments) == 0:
+                    raise OptionError("There must be at least 5 available environments if Oblivaeon is part of goal")
                 self.include_data(self.random.choice(self.available_environments))
 
         # Add random items to included items until pool size is satisfied
