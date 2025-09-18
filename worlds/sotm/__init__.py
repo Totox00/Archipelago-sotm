@@ -186,7 +186,7 @@ class SotmWorld(World):
         available = [d for d in data if (d.name not in self.options.exclude_from_pool.value)
                      and (False not in ((source in self.enabled_sources) for source in d.sources))]
         full_state = SotmState()
-        full_state.items.update(d.name for d in available)
+        full_state.prog_items[0].update(d.name for d in available)
         self.available_villains = [d for d in available if d.category in
                                    (SotmCategory.Villain, SotmCategory.VillainVariant, SotmCategory.TeamVillain)]
         self.available_gladiators = [d for d in available if d.category == SotmCategory.Gladiator]
@@ -196,7 +196,7 @@ class SotmWorld(World):
         self.available_variants = [d for d in available if d.category == SotmCategory.Variant]
         self.available_variant_unlocks = [d for d in available
                                           if d.category in (SotmCategory.Variant, SotmCategory.VillainVariant)
-                                          and d.rule is not None and d.rule(full_state, self.player)]
+                                          and d.rule is not None and d.rule(full_state, 0)]
         self.total_pool_size = len(available)
 
         self.max_points_per_villain = (self.villain_points.normal + self.villain_points.advanced
@@ -378,7 +378,7 @@ class SotmWorld(World):
                 + self.included_variants)
 
     def include_data(self, d: SotmData) -> bool:
-        if d.name in self.state.items:
+        if self.state.prog_items[0].get(d.name, False):
             return True
 
         match d.category:
@@ -414,10 +414,13 @@ class SotmWorld(World):
                 self.included_gladiators.append(d)
 
         self.total_items += 1
-        self.state.items.add(d.name)
+        self.state.prog_items[0][d.name] += 1
+
+        if d.category == SotmCategory.TeamVillain:
+            self.state.prog_items[0]["Team Villains"] += 1
 
         for v in self.available_variant_unlocks:
-            if v.rule(self.state, self.player):
+            if v.rule(self.state, 0):
                 self.possible_variants.append(v)
                 self.available_variant_unlocks.remove(v)
 
@@ -430,16 +433,17 @@ class SotmWorld(World):
             self.include_data(d)
 
     def min_needed_for_variant(self, variant: SotmData) -> list[SotmData]:
-        maybe_deps = [d for d in self.available() if d.name not in self.state.items and d.name in variant.dependencies]
+        maybe_deps = [d for d in self.available() if self.state.prog_items[0].get(d.name, 0) == 0
+                      and d.name in variant.dependencies]
         self.random.shuffle(maybe_deps)
         test_state = SotmState()
-        test_state.items.update([d.name for d in maybe_deps])
-        test_state.items.update(self.state.items)
+        test_state.prog_items[0].update([d.name for d in maybe_deps])
+        test_state.prog_items[0].update(self.state.prog_items[0])
         required = []
         for d in maybe_deps:
-            test_state.items.remove(d.name)
-            if not variant.rule(test_state, self.player):
-                test_state.items.add(d.name)
+            test_state.prog_items[0][d.name] -= 1
+            if not variant.rule(test_state, 0):
+                test_state.prog_items[0][d.name] += 1
                 required.append(d)
         return required
 
