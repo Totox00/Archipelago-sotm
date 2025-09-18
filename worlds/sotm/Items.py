@@ -19,9 +19,9 @@ class SotmItem(Item):
         if classification is None:
             classification = ItemClassification.progression_deprioritized_skip_balancing
             if category in (SotmCategory.Villain, SotmCategory.VillainVariant):
-                category = ItemClassification.progression
+                classification = ItemClassification.progression
             if category in (SotmCategory.TeamVillain, SotmCategory.Gladiator):
-                category = ItemClassification.progression_skip_balancing
+                classification = ItemClassification.progression_skip_balancing
             if category == SotmCategory.Filler:
                 classification = ItemClassification.filler
             elif category == SotmCategory.Trap:
