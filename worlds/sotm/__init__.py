@@ -720,7 +720,7 @@ class SotmWorld(World):
 
         team_count = state.prog_items[self.player]["Team Villains"]
 
-        return ((state.prog_items[self.player]["Villains"] + team_count if team_count >= 3 else 0)
+        return ((state.prog_items[self.player]["Villains"] + (team_count if team_count >= 3 else 0))
                 * self.max_points_per_villain >= self.required_villains)
 
     def variant_goal(self, state) -> bool:
