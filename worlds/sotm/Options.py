@@ -31,8 +31,8 @@ class RequiredVillains(Range):
     """The number of villains that must be defeated in order to goal"""
     display_name = "Required Villains"
     range_start = 0
-    range_end = [d.category in (SotmCategory.Villain, SotmCategory.TeamVillain, SotmCategory.VillainVariant)
-                 for d in data].count(True) * 40 - 20
+    range_end = sum(40 if d.challenge else 20 for d in data
+                    if d.category in (SotmCategory.Villain, SotmCategory.TeamVillain, SotmCategory.VillainVariant))
     default = 0
 
 

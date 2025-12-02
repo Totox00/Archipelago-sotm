@@ -15,7 +15,8 @@ class SotmItem(Item):
             code: Optional[int],
             category: SotmCategory,
             classification: Optional[ItemClassification] = None,
-            base: Optional[str] = None):
+            base: Optional[str] = None,
+            villain_points: int = 0):
         if classification is None:
             classification = ItemClassification.progression_deprioritized_skip_balancing
             if category in (SotmCategory.Villain, SotmCategory.VillainVariant):
@@ -29,6 +30,8 @@ class SotmItem(Item):
         super().__init__(name, classification, code, player)
         self.category = category
         self.base = base
+        self.villain_points = 0 if category == SotmCategory.TeamVillain else villain_points
+        self.team_villain_points = villain_points if category == SotmCategory.TeamVillain else 0
 
     @staticmethod
     def get_item_name_groups(item_name_to_id: dict[str, int]) -> dict:

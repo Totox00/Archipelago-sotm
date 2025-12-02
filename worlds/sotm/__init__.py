@@ -119,7 +119,6 @@ class SotmWorld(World):
     required_variants: int
 
     total_possible_villain_points: int
-    max_points_per_villain: int
     location_density: LocationDensity
     villain_points: VillainPoints
     starting_items: StartingItems
@@ -199,9 +198,9 @@ class SotmWorld(World):
                                           and d.rule is not None and d.rule(full_state, 0)]
         self.total_pool_size = len(available)
 
-        self.max_points_per_villain = (self.villain_points.normal + self.villain_points.advanced
-                                       + self.villain_points.challenge + self.villain_points.ultimate)
-        self.total_possible_villain_points = len(self.available_villains) * self.max_points_per_villain
+        self.total_possible_villain_points = sum(self.villain_points.normal + self.villain_points.advanced +
+                                                 ((self.villain_points.challenge + self.villain_points.ultimate)
+                                                  if d.challenge else 0) for d in self.available_villains)
 
         self.required_villains = min(self.options.required_villains.value, self.total_possible_villain_points)
         self.required_variants = min(self.options.required_variants.value, len(self.available_variant_unlocks))
@@ -584,6 +583,11 @@ class SotmWorld(World):
         self.multiworld.itempool.extend(items)
 
     def create_item_from_data(self, d: SotmData) -> Item:
+        if d.category in (SotmCategory.Villain, SotmCategory.VillainVariant, SotmCategory.TeamVillain):
+            return SotmItem(self.player, d.name, self.item_name_to_id[d.name], d.category, base=d.base,
+                            villain_points=self.villain_points.normal + self.villain_points.advanced +
+                            ((self.villain_points.challenge + self.villain_points.ultimate) if d.challenge else 0))
+
         return SotmItem(self.player, d.name, self.item_name_to_id[d.name], d.category, base=d.base)
 
     def create_item(self, name: str) -> Item:
@@ -718,10 +722,10 @@ class SotmWorld(World):
         if self.required_villains == 0:
             return True
 
-        team_count = state.prog_items[self.player]["Team Villains"]
-
-        return ((state.prog_items[self.player]["Villains"] + (team_count if team_count >= 3 else 0))
-                * self.max_points_per_villain >= self.required_villains)
+        return ((state.prog_items[self.player]["Villain Points"] +
+                 (state.prog_items[self.player]["Team Villain Points"]
+                  if state.prog_items[self.player]["Team Villains"] >= 3 else 0))
+                >= self.required_villains)
 
     def variant_goal(self, state) -> bool:
         if self.required_variants == 0:
@@ -739,6 +743,9 @@ class SotmWorld(World):
 
     def collect(self, state: CollectionState, item: SotmItem):
         changed = super().collect(state, item)
+        state.prog_items[self.player]["Villain Points"] += item.villain_points
+        state.prog_items[self.player]["Team Villain Points"] += item.team_villain_points
+
         match item.category:
             case SotmCategory.Hero:
                 state.prog_items[self.player][f"Any {item.name}"] += 1
@@ -769,6 +776,9 @@ class SotmWorld(World):
 
     def remove(self, state: CollectionState, item: SotmItem):
         changed = super().remove(state, item)
+        state.prog_items[self.player]["Villain Points"] -= item.villain_points
+        state.prog_items[self.player]["Team Villain Points"] -= item.team_villain_points
+
         match item.category:
             case SotmCategory.Hero:
                 state.prog_items[self.player][f"Any {item.name}"] -= 1
