@@ -67,7 +67,7 @@ class RequiredScions(Range):
     """The number of scions that must be received before fighting Oblivaeon"""
     display_name = "Required Scions"
     range_start = 0
-    range_end = 1000
+    range_end = 65535
     default = 10
 
 
@@ -295,19 +295,19 @@ class LocationDensity(OptionDict):
     """
     Specify the number of items placed at each location.
     If you want no items to be placed at a location, set it to 0 (Do not delete the entry outright!).
-    Each location can have at most 5 items.
+    Each location can have at most 64 items.
     """
     display_name = "Location Density"
     schema = Schema({
         "villain": {
-            "normal": And(int, lambda n: 0 <= n <= 5),
-            "advanced": And(int, lambda n: 0 <= n <= 5),
-            "challenge": And(int, lambda n: 0 <= n <= 5),
-            "ultimate": And(int, lambda n: 0 <= n <= 5)
+            "normal": And(int, lambda n: 0 <= n <= 64),
+            "advanced": And(int, lambda n: 0 <= n <= 64),
+            "challenge": And(int, lambda n: 0 <= n <= 64),
+            "ultimate": And(int, lambda n: 0 <= n <= 64)
         },
-        "environment": And(int, lambda n: 0 <= n <= 5),
-        "hero": And(int, lambda n: 0 <= n <= 5),
-        "variant_unlock": And(int, lambda n: 0 <= n <= 5),
+        "environment": And(int, lambda n: 0 <= n <= 64),
+        "hero": And(int, lambda n: 0 <= n <= 64),
+        "variant_unlock": And(int, lambda n: 0 <= n <= 64),
     })
     default = {
         "villain": {

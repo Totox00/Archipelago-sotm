@@ -52,15 +52,15 @@ class SotmLocation(Location):
     def get_location_name_groups() -> dict:
         location_name_groups = {
             **{f"Environments #{n}": {f"{d.name} - Any Difficulty #{n}" for d in data
-                                      if d.category == SotmCategory.Environment} for n in range(1, 6)},
+                                      if d.category == SotmCategory.Environment} for n in range(1, 65)},
             **{f"Variants #{n}": {f"{d.name} - Unlock #{n}" for d in data
                                   if d.category in (SotmCategory.Variant, SotmCategory.VillainVariant)}
-               for n in range(1, 6)},
+               for n in range(1, 65)},
             **{f"Heroes #{n}": {f"{d.name} - Any Difficulty #{n}" for d in data
-                                if d.category in (SotmCategory.Hero, SotmCategory.Variant)} for n in range(1, 6)}
+                                if d.category in (SotmCategory.Hero, SotmCategory.Variant)} for n in range(1, 65)}
         }
 
-        for n in range(1, 6):
+        for n in range(1, 65):
             for difficulty in ["Normal", "Advanced"]:
                 location_name_groups.update({f"Villains - {difficulty} #{n}": {
                     f"{d.name} - {difficulty} #{n}" for d in data
