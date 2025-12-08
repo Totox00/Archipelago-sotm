@@ -295,7 +295,7 @@ class LocationDensity(OptionDict):
     """
     Specify the number of items placed at each location.
     If you want no items to be placed at a location, set it to 0 (Do not delete the entry outright!).
-    Each location can have at most 64 items.
+    Each location can have at most 64 items. This maximum can be reduced in the host yaml.
     """
     display_name = "Location Density"
     schema = Schema({

@@ -1,6 +1,6 @@
 import math
 from itertools import chain
-from typing import Dict, Set, Optional, NamedTuple
+from typing import Dict, Set, Optional, NamedTuple, ClassVar
 
 from BaseClasses import MultiWorld, Region, Item, Tutorial, ItemClassification, CollectionState
 from Options import Toggle, OptionError
@@ -13,6 +13,7 @@ from .Options import SotmOptions, sotm_option_groups
 from .Data import SotmSource, SotmData, SotmCategory, data, difficulties, SotmState, sources, FillerType, \
     damage_types, filler, base_to_variants, packs
 from .Id import item_name_to_id, location_name_to_id
+from .Settings import SotmSettings
 
 
 class SotmWeb(WebWorld):
@@ -81,6 +82,7 @@ class SotmWorld(World):
     game = "Sentinels of the Multiverse"
     options_dataclass = SotmOptions
     options: SotmOptions
+    settings: ClassVar[SotmSettings]
     topology_present: bool = False
     web = SotmWeb()
 
@@ -166,6 +168,18 @@ class SotmWorld(World):
             self.options.location_density.value["hero"],
             self.options.location_density.value["variant_unlock"]
         )
+
+        if self.settings.max_location_density < max(self.location_density.villain_normal,
+                                                    self.location_density.villain_advanced,
+                                                    self.location_density.villain_challenge,
+                                                    self.location_density.villain_ultimate,
+                                                    self.location_density.environment,
+                                                    self.location_density.hero,
+                                                    self.location_density.variant_unlock):
+            raise OptionError(f"Sentinels of the Multiverse: Player {self.player_name} has their location_density "
+                              f"option set too high. They must either change it to at most "
+                              f"{self.settings.max_location_density} or the host needs to raise the value of "
+                              f"max_location_density in their host.yaml settings.")
 
         self.villain_points = VillainPoints(
             self.options.villain_points.value["normal"],
