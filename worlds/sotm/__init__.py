@@ -200,6 +200,9 @@ class SotmWorld(World):
                      and (False not in ((source in self.enabled_sources) for source in d.sources))]
         full_state = SotmState()
         full_state.prog_items[0].update(d.name for d in available)
+        full_state.prog_items[0].update(f"Any {d.name}" for d in available if d.category == SotmCategory.Hero)
+        full_state.prog_items[0].update(f"Any {d.base}" for d in available if d.category == SotmCategory.Variant)
+        
         self.available_villains = [d for d in available if d.category in
                                    (SotmCategory.Villain, SotmCategory.VillainVariant, SotmCategory.TeamVillain)]
         self.available_gladiators = [d for d in available if d.category == SotmCategory.Gladiator]
@@ -410,11 +413,13 @@ class SotmWorld(World):
                     return False
                 self.available_heroes.remove(d)
                 self.included_heroes.append(d)
+                self.state.prog_items[0][f"Any {d.name}"] += 1
             case SotmCategory.Variant:
                 if d not in self.available_variants:
                     return False
                 self.available_variants.remove(d)
                 self.included_variants.append(d)
+                self.state.prog_items[0][f"Any {d.base}"] += 1
             case SotmCategory.Contender:
                 if d not in self.available_contenders:
                     return False
